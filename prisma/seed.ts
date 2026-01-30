@@ -23,7 +23,11 @@ async function main() {
         email: adminEmail,
         fullName: adminFullName,
         passwordHash,
-        platformAdmin: { create: {} },
+        emailVerified: true,
+        emailVerifiedAt: new Date(),
+        platformAdmin: {
+          create: {},
+        },
       },
     });
 
@@ -40,13 +44,16 @@ async function main() {
 
   // ---- 2) GLOBAL PERMISSIONS ----
   const permissions: Array<{ key: string; description?: string }> = [
+    { key: "users:read", description: "View users in company" },
     { key: "users:invite", description: "Invite users to company" },
     { key: "users:remove", description: "Remove users from company" },
     { key: "users:manage_roles", description: "Assign roles to users" },
 
+    { key: "company:read", description: "View company information" },
     { key: "company:update", description: "Update company settings" },
     { key: "company:delete", description: "Delete company" },
 
+    { key: "roles:read", description: "View roles and permissions" },
     { key: "roles:create", description: "Create roles" },
     { key: "roles:update", description: "Update roles" },
     { key: "roles:delete", description: "Delete roles" },

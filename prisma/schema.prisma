@@ -1,6 +1,5 @@
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -35,21 +34,30 @@ enum InviteStatus {
 
 // Global user (can belong to many companies via Membership)
 model User {
-  id           String   @id @default(uuid()) @db.Uuid
-  email        String   @unique @db.VarChar(320)
-  fullName     String   @db.VarChar(255)
-  passwordHash String   @db.VarChar(255)
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique @db.VarChar(320)
+  fullName      String    @db.VarChar(255)
+  phone         String?   @db.VarChar(20)
+  passwordHash  String    @db.VarChar(255)
+  avatar        String?   @db.VarChar(500)
+  
+  // Email verification
+  emailVerified   Boolean   @default(false)
+  emailVerifiedAt DateTime?
+  
+  // Activity tracking
+  lastLoginAt DateTime?
 
   // Global kill-switch (blocks all access)
-  isDisabled   Boolean  @default(false)
-  disabledAt   DateTime?
-  disabledBy   String?  @db.Uuid
+  isDisabled Boolean   @default(false)
+  disabledAt DateTime?
+  disabledBy String?   @db.Uuid
 
   // Audit
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  createdBy    String?  @db.Uuid
-  updatedBy    String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
 
   memberships   Membership[]
   refreshTokens RefreshToken[]
@@ -63,13 +71,14 @@ model User {
   issuedMemberInvites CompanyMemberInvite[] @relation("MemberInviteIssuedByUser")
   usedMemberInvites   CompanyMemberInvite[] @relation("MemberInviteUsedByUser")
 
+  @@index([email, emailVerified])
   @@index([isDisabled])
 }
 
 // Platform super admin flag
 model PlatformAdmin {
-  userId    String @id @db.Uuid
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String   @id @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
@@ -79,10 +88,13 @@ model PlatformAdmin {
 
 // Tenant (company)
 model Company {
-  id     String        @id @default(uuid()) @db.Uuid
-  name   String        @db.VarChar(255)
-  slug   String        @unique @db.VarChar(80)
-  status CompanyStatus @default(ACTIVE)
+  id          String        @id @default(uuid()) @db.Uuid
+  name        String        @db.VarChar(255)
+  slug        String        @unique @db.VarChar(80)
+  logo        String?       @db.VarChar(500)
+  description String?       @db.Text
+  metadata    Json?         @default("{}")
+  status      CompanyStatus @default(ACTIVE)
 
   // Soft delete (archive)
   deletedAt DateTime?
@@ -113,10 +125,14 @@ model Membership {
   companyId String           @db.Uuid
   userId    String           @db.Uuid
   status    MembershipStatus @default(INVITED)
+  metadata  Json?            @default("{}")
+  position   String? @db.VarChar(100)
+  department String? @db.VarChar(100)
 
   // Invite lifecycle within a company
   invitedAt   DateTime?
   activatedAt DateTime?
+  expiresAt   DateTime?
 
   // Supervisor chain inside the company
   supervisorMembershipId String?      @db.Uuid
@@ -138,6 +154,7 @@ model Membership {
   @@index([companyId])
   @@index([userId])
   @@index([status])
+  @@index([expiresAt])
 }
 
 ///////////////////////////
@@ -146,12 +163,14 @@ model Membership {
 
 // Role per company (tenant-scoped)
 model Role {
-  id        String @id @default(uuid()) @db.Uuid
-  companyId String @db.Uuid
-  name      String @db.VarChar(80)
-
+  id          String  @id @default(uuid()) @db.Uuid
+  companyId   String  @db.Uuid
+  name        String  @db.VarChar(80)
+  description String? @db.VarChar(255)
+  color       String? @db.VarChar(7) @default("#6366F1")
+  
   // Protect core roles (e.g. Owner/Member) from deletion in your app logic
-  isSystem  Boolean @default(false)
+  isSystem Boolean @default(false)
 
   // Default role assigned when a member invite is accepted (1 per company by app rule)
   isDefault Boolean @default(false)
@@ -189,7 +208,7 @@ model RolePermission {
   roleId       String @db.Uuid
   permissionId String @db.Uuid
 
-  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
   // Prevent deleting a Permission that is still in use
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
@@ -219,9 +238,9 @@ model MembershipRole {
 
 // Refresh tokens (hash only)
 model RefreshToken {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  tokenHash String   @db.VarChar(255)
+  id        String @id @default(uuid()) @db.Uuid
+  userId    String @db.Uuid
+  tokenHash String @db.VarChar(255)
 
   revokedAt DateTime?
   expiresAt DateTime
@@ -241,9 +260,9 @@ model RefreshToken {
 
 // Single-use invite to create a company (platform admin only)
 model CompanyInvite {
-  id        String              @id @default(uuid()) @db.Uuid
-  email     String              @db.VarChar(320)
-  tokenHash String              @unique @db.VarChar(255)
+  id        String       @id @default(uuid()) @db.Uuid
+  email     String       @db.VarChar(320)
+  tokenHash String       @unique @db.VarChar(255)
   status    InviteStatus @default(PENDING)
 
   issuedByAdminId String @db.Uuid
@@ -271,11 +290,12 @@ model CompanyInvite {
 
 // Invite to join an existing company (platform admin or authorized member)
 model CompanyMemberInvite {
-  id        String                    @id @default(uuid()) @db.Uuid
-  companyId String                    @db.Uuid
-  email     String                    @db.VarChar(320)
-  tokenHash String                    @unique @db.VarChar(255)
+  id        String       @id @default(uuid()) @db.Uuid
+  companyId String       @db.Uuid
+  email     String       @db.VarChar(320)
+  tokenHash String       @unique @db.VarChar(255)
   status    InviteStatus @default(PENDING)
+  inviteMessage String? @db.Text
 
   issuedByUserId String @db.Uuid
   issuedByUser   User   @relation("MemberInviteIssuedByUser", fields: [issuedByUserId], references: [id], onDelete: Restrict)
@@ -301,4 +321,6 @@ model CompanyMemberInvite {
   @@index([expiresAt])
   @@index([status])
   @@index([issuedByUserId])
+  @@index([companyId, status])
+  @@unique([companyId, email, status], name: "unique_pending_invite")
 }
