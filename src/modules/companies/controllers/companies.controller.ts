@@ -28,8 +28,11 @@ export class CompaniesController {
    * List all companies
    */
   async list(req: Request, res: Response) {
+    const userId = req.user!.userId;
+    const isPlatformAdmin = req.isPlatformAdmin || false;
     const query = listCompaniesQuerySchema.parse(req.query);
-    const result = await companiesService.list(query);
+    
+    const result = await companiesService.list(query, userId, isPlatformAdmin);
 
     res.status(200).json({
       success: true,
@@ -43,7 +46,10 @@ export class CompaniesController {
    */
   async getById(req: Request, res: Response) {
     const { id } = req.params;
-    const company = await companiesService.getById(id);
+    const userId = req.user!.userId;
+    const isPlatformAdmin = req.isPlatformAdmin || false;
+    
+    const company = await companiesService.getById(id, userId, isPlatformAdmin);
 
     res.status(200).json({
       success: true,

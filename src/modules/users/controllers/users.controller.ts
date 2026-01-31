@@ -13,8 +13,11 @@ export class UsersController {
    * List all users
    */
   async list(req: Request, res: Response) {
+    const userId = req.user!.userId;
+    const isPlatformAdmin = req.isPlatformAdmin || false;
     const query = listUsersQuerySchema.parse(req.query);
-    const result = await usersService.list(query);
+    
+    const result = await usersService.list(query, userId, isPlatformAdmin);
 
     res.status(200).json({
       success: true,

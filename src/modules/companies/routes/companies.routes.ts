@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { asyncHandler } from '@/common/utils/async-handler';
 import { authMiddleware } from '@/common/middlewares/auth.middleware';
+import { checkPlatformAdmin } from '@/common/middlewares/platform-admin.middleware';
 import { CompaniesController } from '../controllers/companies.controller';
 
 const router = Router();
@@ -8,6 +9,9 @@ const companiesController = new CompaniesController();
 
 // All routes require authentication
 router.use(authMiddleware);
+
+// Check platform admin status for all routes (doesn't block, just adds flag)
+router.use(checkPlatformAdmin);
 
 router.post('/', asyncHandler(companiesController.create));
 router.get('/', asyncHandler(companiesController.list));

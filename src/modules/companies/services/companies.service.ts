@@ -40,12 +40,21 @@ export class CompaniesService {
 
   /**
    * List companies with pagination and filters
+   * Platform admins see all companies
+   * Regular users only see companies where they have membership
    */
-  async list(query: ListCompaniesQuery) {
+  async list(query: ListCompaniesQuery, userId: string, isPlatformAdmin: boolean) {
     const { page, limit, search, status, includeDeleted } = query;
     const skip = (page - 1) * limit;
 
     const where: any = {};
+
+    // Non-admin users only see their companies
+    if (!isPlatformAdmin) {
+      where.memberships = {
+        some: { userId },
+      };
+    }
 
     // Filter by search (name or slug)
     if (search) {
@@ -104,8 +113,9 @@ export class CompaniesService {
 
   /**
    * Get company by ID
+   * Access control should be handled by middleware
    */
-  async getById(companyId: string) {
+  async getById(companyId: string, userId: string, isPlatformAdmin: boolean) {
     const company = await prisma.company.findUnique({
       where: { id: companyId },
       select: {
@@ -130,6 +140,22 @@ export class CompaniesService {
 
     if (!company) {
       throw ApiError.notFound('Company not found');
+    }
+
+    // Verify access for non-admin users
+    if (!isPlatformAdmin) {
+      const membership = await prisma.membership.findUnique({
+        where: {
+          companyId_userId: {
+            companyId,
+            userId,
+          },
+        },
+      });
+
+      if (!membership) {
+        throw ApiError.forbidden('You do not have access to this company');
+      }
     }
 
     return company;

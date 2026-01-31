@@ -6,19 +6,53 @@ import type { UpdateUserDto, ChangePasswordDto, ListUsersQuery } from '../schema
 export class UsersService {
   /**
    * List all users with pagination and search
+   * Platform admins see all users
+   * Regular users only see users from their companies
    */
-  async list(query: ListUsersQuery) {
+  async list(query: ListUsersQuery, userId: string, isPlatformAdmin: boolean) {
     const { page, limit, search } = query;
     const skip = (page - 1) * limit;
 
-    const where = search
-      ? {
-          OR: [
-            { fullName: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-          ],
-        }
-      : {};
+    const where: any = {};
+
+    // Non-admin users only see users from their companies
+    if (!isPlatformAdmin) {
+      // Get company IDs where the user has membership
+      const memberships = await prisma.membership.findMany({
+        where: { userId },
+        select: { companyId: true },
+      });
+
+      const companyIds = memberships.map((m) => m.companyId);
+
+      if (companyIds.length === 0) {
+        // User has no companies, return empty list
+        return {
+          users: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+        };
+      }
+
+      // Filter users who have membership in those companies
+      where.memberships = {
+        some: {
+          companyId: { in: companyIds },
+        },
+      };
+    }
+
+    // Add search filter
+    if (search) {
+      where.OR = [
+        { fullName: { contains: search, mode: 'insensitive' as const } },
+        { email: { contains: search, mode: 'insensitive' as const } },
+      ];
+    }
 
     const [users, total] = await Promise.all([
       prisma.user.findMany({
