@@ -28,6 +28,31 @@ enum InviteStatus {
   REVOKED
 }
 
+enum CompanyRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum PermissionScope {
+  GLOBAL
+  COMPANY
+}
+
+enum PermissionRequestType {
+  GLOBAL_PERMISSION
+  OTHER
+}
+
+enum PermissionRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 ///////////////////////////
 // CORE
 ///////////////////////////
@@ -71,6 +96,21 @@ model User {
   issuedMemberInvites CompanyMemberInvite[] @relation("MemberInviteIssuedByUser")
   usedMemberInvites   CompanyMemberInvite[] @relation("MemberInviteUsedByUser")
 
+  // Company creation requests
+  companyRequests CompanyRequest[]
+
+  // Global permissions
+  globalPermissions UserGlobalPermission[]
+
+  // Reviews of company requests (as admin)
+  reviewedCompanyRequests CompanyRequest[] @relation("CompanyRequestReviewer")
+
+  // Permission requests
+  permissionRequests PermissionRequest[]
+
+  // Reviews of permission requests (as admin)
+  reviewedPermissionRequests PermissionRequest[] @relation("PermissionRequestReviewer")
+
   @@index([email, emailVerified])
   @@index([isDisabled])
 }
@@ -113,6 +153,9 @@ model Company {
 
   // Optional: company created from a single-use CompanyInvite (1:1)
   createdFromInvite CompanyInvite? @relation("InviteCreatedCompany")
+
+  // Company created from an approved request
+  createdFromRequest CompanyRequest? @relation("RequestCreatedCompany")
 
   @@index([name])
   @@index([status])
@@ -196,11 +239,14 @@ model Role {
 
 // Global permission catalog (shared across companies)
 model Permission {
-  id          String  @id @default(uuid()) @db.Uuid
-  key         String  @unique @db.VarChar(120)
-  description String? @db.VarChar(255)
+  id          String          @id @default(uuid()) @db.Uuid
+  key         String          @unique @db.VarChar(120)
+  description String?         @db.VarChar(255)
+  scope       PermissionScope @default(COMPANY)
 
-  roles RolePermission[]
+  roles             RolePermission[]
+  userGlobalPermissions UserGlobalPermission[]
+  permissionRequests PermissionRequest[] @relation("RequestedPermission")
 }
 
 // Role <-> Permission
@@ -323,4 +369,95 @@ model CompanyMemberInvite {
   @@index([issuedByUserId])
   @@index([companyId, status])
   @@unique([companyId, email, status], name: "unique_pending_invite")
+}
+
+///////////////////////////
+// USER GLOBAL PERMISSIONS
+///////////////////////////
+
+// User <-> Global Permission (platform-level permissions)
+model UserGlobalPermission {
+  userId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  grantedAt DateTime @default(now())
+  grantedBy String?  @db.Uuid
+
+  @@id([userId, permissionId])
+  @@index([userId])
+  @@index([permissionId])
+}
+
+///////////////////////////
+// COMPANY REQUESTS
+///////////////////////////
+
+// Request to create a company (user-initiated, admin-approved)
+model CompanyRequest {
+  id          String               @id @default(uuid()) @db.Uuid
+  userId      String               @db.Uuid
+  companyName String               @db.VarChar(255)
+  companySlug String               @db.VarChar(80)
+  description String?              @db.Text
+  reason      String?              @db.Text
+  status      CompanyRequestStatus @default(PENDING)
+
+  // Admin review
+  reviewedBy   String?   @db.Uuid
+  reviewedAt   DateTime?
+  reviewNotes  String?   @db.Text
+
+  // Created company link
+  createdCompanyId String?  @unique @db.Uuid
+  createdCompany   Company? @relation("RequestCreatedCompany", fields: [createdCompanyId], references: [id], onDelete: SetNull)
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("CompanyRequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedBy])
+  @@index([createdAt])
+}
+
+///////////////////////////
+// PERMISSION REQUESTS
+///////////////////////////
+
+// Request for global permissions (user-initiated, admin-approved)
+model PermissionRequest {
+  id          String                   @id @default(uuid()) @db.Uuid
+  userId      String                   @db.Uuid
+  type        PermissionRequestType    @default(GLOBAL_PERMISSION)
+  status      PermissionRequestStatus  @default(PENDING)
+
+  // Requested permission (if type is GLOBAL_PERMISSION)
+  requestedPermissionId String?     @db.Uuid
+  requestedPermission   Permission? @relation("RequestedPermission", fields: [requestedPermissionId], references: [id], onDelete: SetNull)
+
+  // User justification
+  reason String? @db.Text
+
+  // Admin review
+  reviewedBy  String?   @db.Uuid
+  reviewedAt  DateTime?
+  reviewNotes String?   @db.Text
+
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reviewer User? @relation("PermissionRequestReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([reviewedBy])
+  @@index([createdAt])
+  @@index([type])
 }

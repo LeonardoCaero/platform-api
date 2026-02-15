@@ -7,6 +7,11 @@ export const createCompanySchema = z.object({
   logo: z.string().max(500).url().optional().nullable(),
   description: z.string().max(5000).optional().nullable(),
   metadata: z.record(z.string(), z.any()).optional(),
+  inviteMembers: z.array(z.object({
+    email: z.email(),
+    roleId: z.string().uuid().optional(),
+    inviteMessage: z.string().optional(),
+  })).optional(),
 });
 
 export const updateCompanySchema = z.object({
