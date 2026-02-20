@@ -28,6 +28,7 @@ jobs:
           port: ${{ secrets.NAS_SSH_PORT || 22 }}
           script: |
             set -e
+            export PATH=$PATH:/usr/bin:/usr/local/bin
 
             echo "Pulling latest code..."
             cd ${{ secrets.NAS_API_PATH }}
