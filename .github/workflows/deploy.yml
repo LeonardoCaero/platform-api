@@ -1,0 +1,45 @@
+name: Deploy API to NAS
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: SSH Deploy to NAS
+    runs-on: ubuntu-latest
+
+    steps:
+      # Connect to the NAS via Tailscale
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v3
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:ci
+
+      # SSH into the NAS and deploy
+      - name: Deploy API
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.NAS_HOST }}
+          username: ${{ secrets.NAS_USER }}
+          key: ${{ secrets.NAS_SSH_KEY }}
+          port: ${{ secrets.NAS_SSH_PORT || 22 }}
+          script: |
+            set -e
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+
+            echo "Pulling latest code..."
+            cd ${{ secrets.NAS_API_PATH }}
+            git fetch origin main
+            git reset --hard origin/main
+            git clean -fd
+
+            echo "Rebuilding and starting caero_api..."
+            docker compose up -d --build caero_api
+
+            echo "Cleaning up old images..."
+            docker image prune -f
+
+            echo "Deploy complete."
