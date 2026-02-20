@@ -1,0 +1,77 @@
+services:
+
+  # ── Database ────────────────────────────────────────────────────────────────
+  caero_db:
+    image: postgres:16
+    container_name: caero_db
+    restart: unless-stopped
+    # Only for local
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - caero_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - caero_net
+
+  # ── API ─────────────────────────────────────────────────────────────────────
+  caero_api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: caero_api
+    restart: unless-stopped
+    ports:
+      - "4000:3000"
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@caero_db:5432/${POSTGRES_DB}?schema=public
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-15m}
+      REFRESH_TOKEN_SECRET: ${REFRESH_TOKEN_SECRET}
+      REFRESH_TOKEN_EXPIRES_IN: ${REFRESH_TOKEN_EXPIRES_IN:-7d}
+      COMPANY_INVITE_EXPIRY_HOURS: ${COMPANY_INVITE_EXPIRY_HOURS:-72}
+      MEMBER_INVITE_EXPIRY_HOURS: ${MEMBER_INVITE_EXPIRY_HOURS:-168}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_ADMIN_FULLNAME: ${SEED_ADMIN_FULLNAME}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL}
+    depends_on:
+      caero_db:
+        condition: service_healthy
+    networks:
+      - caero_net
+
+  # ── Frontend ─────────────────────────────────────────────────────────────────
+  caero_frontend:
+    build:
+      context: ../platform-frontend
+      dockerfile: Dockerfile
+      args:
+        # URL accessible from the browser — use your NAS IP or domain
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/api}
+    container_name: caero_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    depends_on:
+      - caero_api
+    networks:
+      - caero_net
+
+networks:
+  caero_net:
+    driver: bridge
+
+volumes:
+  caero_pgdata:
