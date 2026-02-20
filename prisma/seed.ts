@@ -44,23 +44,71 @@ async function main() {
 
   // ---- 2) GLOBAL & COMPANY PERMISSIONS ----
   const permissions: Array<{ key: string; description?: string; scope: 'GLOBAL' | 'COMPANY' }> = [
-    // Global permissions (platform-level)
-    { key: "company:create", description: "Create a new company", scope: "GLOBAL" },
+    // ==========================================
+    // PLATFORM PERMISSIONS (Global Scope)
+    // ==========================================
+    { key: 'PLATFORM:MANAGE_USERS', description: 'Manage all platform users', scope: 'GLOBAL' },
+    { key: 'PLATFORM:MANAGE_PERMISSIONS', description: 'Manage platform permissions catalog', scope: 'GLOBAL' },
+    { key: 'PLATFORM:VIEW_ANALYTICS', description: 'View platform-wide analytics', scope: 'GLOBAL' },
+    { key: 'PLATFORM:MANAGE_SETTINGS', description: 'Manage platform settings', scope: 'GLOBAL' },
 
-    // Company-level permissions
-    { key: "users:read", description: "View users in company", scope: "COMPANY" },
-    { key: "users:invite", description: "Invite users to company", scope: "COMPANY" },
-    { key: "users:remove", description: "Remove users from company", scope: "COMPANY" },
-    { key: "users:manage_roles", description: "Assign roles to users", scope: "COMPANY" },
+    // ==========================================
+    // COMPANY PERMISSIONS
+    // ==========================================
+    { key: 'COMPANY:CREATE', description: 'Create new companies', scope: 'GLOBAL' },
+    { key: 'COMPANY:EDIT_SETTINGS', description: 'Edit company settings', scope: 'COMPANY' },
+    { key: 'COMPANY:DELETE', description: 'Delete companies', scope: 'COMPANY' },
+    { key: 'COMPANY:VIEW_DETAILS', description: 'View company details', scope: 'COMPANY' },
+    { key: 'COMPANY:VIEW_ANALYTICS', description: 'View company analytics', scope: 'COMPANY' },
+    { key: 'COMPANY:EXPORT_DATA', description: 'Export company data', scope: 'COMPANY' },
 
-    { key: "company:read", description: "View company information", scope: "COMPANY" },
-    { key: "company:update", description: "Update company settings", scope: "COMPANY" },
-    { key: "company:delete", description: "Delete company", scope: "COMPANY" },
+    // ==========================================
+    // MEMBER MANAGEMENT
+    // ==========================================
+    { key: 'MEMBER:INVITE', description: 'Invite members to company', scope: 'COMPANY' },
+    { key: 'MEMBER:REMOVE', description: 'Remove members from company', scope: 'COMPANY' },
+    { key: 'MEMBER:EDIT_ROLE', description: 'Edit member roles', scope: 'COMPANY' },
+    { key: 'MEMBER:VIEW_LIST', description: 'View members list', scope: 'COMPANY' },
+    { key: 'MEMBER:VIEW_DETAILS', description: 'View member details', scope: 'COMPANY' },
 
-    { key: "roles:read", description: "View roles and permissions", scope: "COMPANY" },
-    { key: "roles:create", description: "Create roles", scope: "COMPANY" },
-    { key: "roles:update", description: "Update roles", scope: "COMPANY" },
-    { key: "roles:delete", description: "Delete roles", scope: "COMPANY" },
+    // ==========================================
+    // ROLE MANAGEMENT
+    // ==========================================
+    { key: 'ROLE:CREATE', description: 'Create new roles', scope: 'COMPANY' },
+    { key: 'ROLE:EDIT', description: 'Edit existing roles', scope: 'COMPANY' },
+    { key: 'ROLE:DELETE', description: 'Delete roles', scope: 'COMPANY' },
+    { key: 'ROLE:VIEW', description: 'View roles', scope: 'COMPANY' },
+    { key: 'ROLE:ASSIGN_PERMISSIONS', description: 'Assign permissions to roles', scope: 'COMPANY' },
+
+    // ==========================================
+    // INVOICE MANAGEMENT
+    // ==========================================
+    { key: 'INVOICE:CREATE', description: 'Create invoices', scope: 'COMPANY' },
+    { key: 'INVOICE:EDIT', description: 'Edit invoices', scope: 'COMPANY' },
+    { key: 'INVOICE:DELETE', description: 'Delete invoices', scope: 'COMPANY' },
+    { key: 'INVOICE:VIEW', description: 'View invoices', scope: 'COMPANY' },
+    { key: 'INVOICE:APPROVE', description: 'Approve invoices', scope: 'COMPANY' },
+    { key: 'INVOICE:EXPORT', description: 'Export invoice data', scope: 'COMPANY' },
+
+    // ==========================================
+    // REPORT MANAGEMENT
+    // ==========================================
+    { key: 'REPORT:CREATE', description: 'Create reports', scope: 'COMPANY' },
+    { key: 'REPORT:EDIT', description: 'Edit reports', scope: 'COMPANY' },
+    { key: 'REPORT:DELETE', description: 'Delete reports', scope: 'COMPANY' },
+    { key: 'REPORT:VIEW', description: 'View reports', scope: 'COMPANY' },
+    { key: 'REPORT:EXPORT', description: 'Export reports', scope: 'COMPANY' },
+    { key: 'REPORT:SCHEDULE', description: 'Schedule automated reports', scope: 'COMPANY' },
+
+    // ==========================================
+    // TIME TRACKING
+    // ==========================================
+    { key: 'TIME:TRACK', description: 'Track time entries', scope: 'COMPANY' },
+    { key: 'TIME:EDIT_OWN', description: 'Edit own time entries', scope: 'COMPANY' },
+    { key: 'TIME:EDIT_ALL', description: 'Edit all time entries', scope: 'COMPANY' },
+    { key: 'TIME:APPROVE', description: 'Approve time entries', scope: 'COMPANY' },
+    { key: 'TIME:VIEW_REPORTS', description: 'View time tracking reports', scope: 'COMPANY' },
+    { key: 'TIME:EXPORT', description: 'Export time tracking data', scope: 'COMPANY' },
   ];
 
   for (const permission of permissions) {
@@ -80,9 +128,9 @@ async function main() {
 
   console.log(`✅ Permissions ensured: ${permissions.length}`);
 
-  // ---- 3) GRANT "company:create" TO PLATFORM ADMIN ----
+  // ---- 3) GRANT "COMPANY:CREATE" TO PLATFORM ADMIN ----
   const companyCreatePermission = await prisma.permission.findFirst({
-    where: { key: "company:create" },
+    where: { key: "COMPANY:CREATE" },
   });
 
   if (companyCreatePermission && adminUser) {
@@ -101,7 +149,7 @@ async function main() {
       update: {},
     });
 
-    console.log("✅ Platform admin granted 'company:create' permission");
+    console.log("✅ Platform admin granted 'COMPANY:CREATE' permission");
   }
 
   console.log("🌱 Seed completed successfully");

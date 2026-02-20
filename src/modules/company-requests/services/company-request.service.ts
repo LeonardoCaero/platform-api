@@ -331,15 +331,17 @@ export class CompanyRequestService {
 
     const newStatus = dto.action === 'approve' ? CompanyRequestStatus.APPROVED : CompanyRequestStatus.REJECTED;
 
-    // If approving, grant the "company:create" permission to the user
+    // If approving, grant the "COMPANY:CREATE" permission to the user
     if (dto.action === 'approve') {
-      // Find or create the permission
+      // Find the permission
       const permission = await prisma.permission.findFirst({
-        where: { key: 'company:create' },
+        where: { 
+          key: 'COMPANY:CREATE',
+        },
       });
 
       if (!permission) {
-        throw new ApiError({ message: 'Permission "company:create" not found in database', statusCode: 500 });
+        throw new ApiError({ message: 'Permission "COMPANY:CREATE" not found in database', statusCode: 500 });
       }
 
       // Grant permission to user (if not already granted)

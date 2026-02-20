@@ -111,6 +111,9 @@ model User {
   // Reviews of permission requests (as admin)
   reviewedPermissionRequests PermissionRequest[] @relation("PermissionRequestReviewer")
 
+  // Time tracking
+  timeEntries TimeEntry[]
+
   @@index([email, emailVerified])
   @@index([isDisabled])
 }
@@ -156,6 +159,10 @@ model Company {
 
   // Company created from an approved request
   createdFromRequest CompanyRequest? @relation("RequestCreatedCompany")
+
+  // Time tracking
+  projects    Project[]
+  timeEntries TimeEntry[]
 
   @@index([name])
   @@index([status])
@@ -460,4 +467,55 @@ model PermissionRequest {
   @@index([reviewedBy])
   @@index([createdAt])
   @@index([type])
+}
+
+///////////////////////////
+// TIME TRACKING
+///////////////////////////
+
+// Projects for time categorization (optional)
+model Project {
+  id          String   @id @default(uuid()) @db.Uuid
+  companyId   String   @db.Uuid
+  name        String   @db.VarChar(150)
+  description String?  @db.Text
+  color       String?  @db.VarChar(7) @default("#10B981")
+  isActive    Boolean  @default(true)
+
+  company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  timeEntries TimeEntry[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   String?  @db.Uuid
+  updatedBy   String?  @db.Uuid
+
+  @@index([companyId, isActive])
+}
+
+// Daily time entries
+model TimeEntry {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @db.Uuid
+  companyId    String   @db.Uuid
+  projectId    String?  @db.Uuid
+
+  date         DateTime @db.Date
+  hours        Decimal  @db.Decimal(5,2)
+  startTime    String?  @db.VarChar(5)
+  endTime      String?  @db.VarChar(5)
+
+  title        String   @db.VarChar(200)
+  description  String?  @db.Text
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([companyId, date])
+  @@index([userId, date])
+  @@index([projectId])
 }

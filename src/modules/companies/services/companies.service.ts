@@ -106,7 +106,7 @@ export class CompaniesService {
       });
 
       // 5. Send invites to members if provided
-      const invites = [];
+      const invites: { id: string; email: string; token: string }[] = [];
       if (inviteMembers && inviteMembers.length > 0) {
         for (const invite of inviteMembers) {
           // Generate secure token
@@ -122,7 +122,7 @@ export class CompaniesService {
               status: InviteStatus.PENDING,
               inviteMessage: invite.inviteMessage,
               issuedByUserId: userId,
-              defaultRoleId: invite.roleId || memberRole.id, // Default to Member role if not specified
+              defaultRoleId: invite.roleId || memberRole.id,
               expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
             },
           });
@@ -188,10 +188,10 @@ export class CompaniesService {
 
     const where: any = {};
 
-    // Non-admin users only see their companies
+    // Non-admin users only see their companies (active memberships only, not invited)
     if (!isPlatformAdmin) {
       where.memberships = {
-        some: { userId },
+        some: { userId, status: 'ACTIVE' },
       };
     }
 
@@ -392,6 +392,7 @@ export class CompaniesService {
       where: { id: companyId },
       data: {
         deletedAt: new Date(),
+        status: 'SUSPENDED',
         updatedBy: userId,
       },
     });
@@ -419,6 +420,7 @@ export class CompaniesService {
       where: { id: companyId },
       data: {
         deletedAt: null,
+        status: 'ACTIVE',
         updatedBy: userId,
       },
       select: {
@@ -436,4 +438,6 @@ export class CompaniesService {
 
     return restored;
   }
+
+  
 }
