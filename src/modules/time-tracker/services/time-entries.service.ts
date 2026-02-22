@@ -301,9 +301,19 @@ export class TimeEntriesService {
   async delete(id: string, userId: string, isPlatformAdmin: boolean) {
     const timeEntry = await this.getById(id, userId, isPlatformAdmin);
 
-    // Only owner can delete their own entries (unless platform admin)
+    // Allow: platform admin, entry owner, or company Owner role
     if (!isPlatformAdmin && timeEntry.userId !== userId) {
-      throw ApiError.forbidden('You can only delete your own time entries');
+      const isCompanyOwner = await prisma.membership.findFirst({
+        where: {
+          userId,
+          companyId: timeEntry.companyId,
+          status: MembershipStatus.ACTIVE,
+          roles: { some: { role: { name: 'Owner' } } },
+        },
+      });
+      if (!isCompanyOwner) {
+        throw ApiError.forbidden('You do not have permission to delete this entry');
+      }
     }
 
     await prisma.timeEntry.delete({
