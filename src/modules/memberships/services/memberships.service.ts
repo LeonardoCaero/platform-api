@@ -1,5 +1,6 @@
 ﻿import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
+import { sseManager } from '@/common/services/sse.manager';
 
 const err = (message: string, statusCode: number) =>
   new ApiError({ message, statusCode });
@@ -51,7 +52,6 @@ const memberInclude = {
 } as const;
 
 export class MembershipsService {
-  // â”€â”€â”€ Members â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async getMembers(companyId: string) {
     const members = await prisma.membership.findMany({
@@ -118,8 +118,29 @@ export class MembershipsService {
           ? { create: [{ roleId: defaultRole.id }] }
           : undefined,
       },
-      include: memberInclude,
+      include: {
+        ...memberInclude,
+        company: { select: { id: true, name: true, slug: true, logo: true } },
+      },
     });
+
+    // Push real-time notification to the invited user
+    sseManager.sendToUser(data.userId, 'invitation:new', {
+      id: membership.id,
+      company: {
+        id: membership.company.id,
+        name: membership.company.name,
+        slug: membership.company.slug,
+        logo: membership.company.logo,
+      },
+      roles: membership.roles.map((mr: any) => ({
+        id: mr.role.id,
+        name: mr.role.name,
+        color: mr.role.color,
+      })),
+      invitedAt: (membership.invitedAt ?? membership.createdAt).toISOString(),
+    });
+
     return mapMembership(membership);
   }
 
@@ -146,8 +167,6 @@ export class MembershipsService {
     if (!membership) throw err('Member not found', 404);
     await prisma.membership.delete({ where: { id: memberId } });
   }
-
-  // â”€â”€â”€ Roles â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
   async getRoles(companyId: string) {
     const roles = await prisma.role.findMany({

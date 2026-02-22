@@ -8,6 +8,7 @@ import permissionsRoutes from './modules/permissions/routes/permissions.routes';
 import timeEntriesRoutes from './modules/time-tracker/routes/time-entries.routes';
 import projectsRoutes from './modules/time-tracker/routes/projects.routes';
 import invitationsRoutes from './modules/memberships/routes/invitations.routes';
+import sseRoutes from './modules/sse/routes/sse.routes';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/permissions', permissionsRoutes);
 router.use('/time-entries', timeEntriesRoutes);
 router.use('/projects', projectsRoutes);
 router.use('/invitations', invitationsRoutes);
+router.use('/sse', sseRoutes);
 
 export default router;

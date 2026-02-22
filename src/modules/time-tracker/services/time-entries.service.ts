@@ -1,9 +1,36 @@
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
+import { sseManager } from '@/common/services/sse.manager';
 import type { CreateTimeEntryDto, UpdateTimeEntryDto, ListTimeEntriesQuery } from '../schemas/time-entries.schema';
 import { MembershipStatus } from '@prisma/client';
 
 export class TimeEntriesService {
+  /**
+   * Returns the user IDs that should receive a real-time time-entry notification:
+   * company owners + platform admins, excluding the user who triggered the action.
+   */
+  private async getNotifiableUserIds(companyId: string, excludeUserId: string): Promise<string[]> {
+    const [ownerMemberships, platformAdmins] = await Promise.all([
+      // Members of this company whose role is 'Owner'
+      prisma.membership.findMany({
+        where: {
+          companyId,
+          status: MembershipStatus.ACTIVE,
+          roles: { some: { role: { name: 'Owner' } } },
+        },
+        select: { userId: true },
+      }),
+      // All platform admins
+      prisma.platformAdmin.findMany({ select: { userId: true } }),
+    ]);
+
+    const ids = new Set<string>();
+    for (const m of ownerMemberships) ids.add(m.userId);
+    for (const a of platformAdmins) ids.add(a.userId);
+    ids.delete(excludeUserId);
+    return [...ids];
+  }
+
   /**
    * Create a new time entry
    */
@@ -59,6 +86,18 @@ export class TimeEntriesService {
           },
         },
       },
+    });
+
+    // Notify owners + platform admins in real time (not the user themselves)
+    const notifyIds = await this.getNotifiableUserIds(timeEntry.companyId, userId);
+    sseManager.sendToUsers(notifyIds, 'time-entry:change', {
+      action: 'created',
+      companyId: timeEntry.companyId,
+      companyName: timeEntry.company.name,
+      userName: timeEntry.user.fullName,
+      hours: Number(timeEntry.hours),
+      projectName: timeEntry.project?.name ?? null,
+      date: timeEntry.date,
     });
 
     return timeEntry;
@@ -241,6 +280,18 @@ export class TimeEntriesService {
       },
     });
 
+    // Notify owners + platform admins in real time (not the user themselves)
+    const notifyIds = await this.getNotifiableUserIds(updatedTimeEntry.companyId, userId);
+    sseManager.sendToUsers(notifyIds, 'time-entry:change', {
+      action: 'updated',
+      companyId: updatedTimeEntry.companyId,
+      companyName: updatedTimeEntry.company.name,
+      userName: updatedTimeEntry.user.fullName,
+      hours: Number(updatedTimeEntry.hours),
+      projectName: updatedTimeEntry.project?.name ?? null,
+      date: updatedTimeEntry.date,
+    });
+
     return updatedTimeEntry;
   }
 
@@ -257,6 +308,14 @@ export class TimeEntriesService {
 
     await prisma.timeEntry.delete({
       where: { id },
+    });
+
+    // Notify owners + platform admins in real time (not the user themselves)
+    // For deletes we only refresh the data, no toast
+    const notifyIds = await this.getNotifiableUserIds(timeEntry.companyId, userId);
+    sseManager.sendToUsers(notifyIds, 'time-entry:change', {
+      action: 'deleted',
+      companyId: timeEntry.companyId,
     });
 
     return { message: 'Time entry deleted successfully' };
