@@ -16,9 +16,10 @@ export class TimeEntriesController {
    */
   async create(req: Request, res: Response) {
     const userId = req.user!.userId;
+    const isPlatformAdmin = req.isPlatformAdmin || false;
     const data = createTimeEntrySchema.parse(req.body);
 
-    const timeEntry = await timeEntriesService.create(data, userId);
+    const timeEntry = await timeEntriesService.create(data, userId, isPlatformAdmin);
 
     res.status(201).json({
       success: true,
@@ -34,27 +35,26 @@ export class TimeEntriesController {
     const isPlatformAdmin = req.isPlatformAdmin || false;
     const query = listTimeEntriesQuerySchema.parse(req.query);
 
-    // Non-admin users can only see their own entries unless they are an Owner of the company
+    // Non-admin users can only see their own entries unless they are Owner/Admin of the company
     if (!isPlatformAdmin && query.companyId) {
-      const isOwner = await prisma.membership.findFirst({
+      const isOwnerOrAdmin = await prisma.membership.findFirst({
         where: {
           userId,
           companyId: query.companyId,
           status: 'ACTIVE',
           roles: {
             some: {
-              role: { name: 'Owner' },
+              role: { name: { in: ['Owner', 'Admin'] } },
             },
           },
         },
       });
 
-      if (!isOwner) {
+      if (!isOwnerOrAdmin) {
         // Force filter to own entries only
         query.userId = userId;
       }
     } else if (!isPlatformAdmin) {
-      // No companyId provided, restrict to own entries
       query.userId = userId;
     }
 
@@ -66,6 +66,7 @@ export class TimeEntriesController {
       pagination: result.pagination,
     });
   }
+
 
   /**
    * Get time entry by ID

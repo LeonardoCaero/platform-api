@@ -9,6 +9,13 @@ export const createTimeEntrySchema = z.object({
   endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/, 'End time must be in HH:mm format').optional().nullable(),
   title: z.string().min(1, 'Title is required').max(200, 'Title too long'),
   description: z.string().max(2000).optional().nullable(),
+  // New fields
+  isOvertime: z.boolean().optional().default(false),
+  clientId: z.string().uuid().optional().nullable(),
+  clientSiteId: z.string().uuid().optional().nullable(),
+  categoryId: z.string().uuid().optional().nullable(),
+  // Manager logs on behalf of another member
+  targetUserId: z.string().uuid().optional().nullable(),
 });
 
 export const updateTimeEntrySchema = z.object({
@@ -19,6 +26,11 @@ export const updateTimeEntrySchema = z.object({
   endTime: z.string().regex(/^([0-1][0-9]|2[0-3]):[0-5][0-9]$/).optional().nullable(),
   title: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional().nullable(),
+  // New fields
+  isOvertime: z.boolean().optional(),
+  clientId: z.string().uuid().optional().nullable(),
+  clientSiteId: z.string().uuid().optional().nullable(),
+  categoryId: z.string().uuid().optional().nullable(),
 });
 
 export const listTimeEntriesQuerySchema = z.object({
@@ -27,6 +39,9 @@ export const listTimeEntriesQuerySchema = z.object({
   companyId: z.string().uuid().optional(),
   projectId: z.string().uuid().optional(),
   userId: z.string().uuid().optional(),
+  clientId: z.string().uuid().optional(),
+  categoryId: z.string().uuid().optional(),
+  isOvertime: z.coerce.boolean().optional(),
   startDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
   endDate: z.string().optional().transform(val => val ? new Date(val) : undefined),
 });
