@@ -105,6 +105,17 @@ export class ClientsService {
     const client = await this.getById(id, userId, isPlatformAdmin);
     await assertOwnerOrAdmin(userId, client.companyId, isPlatformAdmin);
 
+    if (data.isDefault === true) {
+      return prisma.$transaction(async (tx) => {
+        await tx.client.updateMany({ where: { companyId: client.companyId, id: { not: id } }, data: { isDefault: false } });
+        return tx.client.update({
+          where: { id },
+          data: { ...data, updatedBy: userId },
+          include: { sites: true, rateRules: true, _count: { select: { timeEntries: true } } },
+        });
+      });
+    }
+
     return prisma.client.update({
       where: { id },
       data: { ...data, updatedBy: userId },
@@ -133,6 +144,13 @@ export class ClientsService {
     const site = await prisma.clientSite.findUnique({ where: { id: siteId }, include: { client: true } });
     if (!site) throw ApiError.notFound('Site not found');
     await assertOwnerOrAdmin(userId, site.client.companyId, isPlatformAdmin);
+
+    if (data.isDefault === true) {
+      return prisma.$transaction(async (tx) => {
+        await tx.clientSite.updateMany({ where: { clientId: site.clientId, id: { not: siteId } }, data: { isDefault: false } });
+        return tx.clientSite.update({ where: { id: siteId }, data });
+      });
+    }
 
     return prisma.clientSite.update({ where: { id: siteId }, data });
   }

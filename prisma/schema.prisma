@@ -580,6 +580,7 @@ model Client {
   address     String?  @db.Text
   notes       String?  @db.Text
   isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
 
   company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
   sites       ClientSite[]
@@ -603,6 +604,7 @@ model ClientSite {
   city      String?  @db.VarChar(100)
   notes     String?  @db.Text
   isActive  Boolean  @default(true)
+  isDefault Boolean  @default(false)
 
   client      Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   timeEntries TimeEntry[]

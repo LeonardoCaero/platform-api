@@ -21,6 +21,7 @@ export const updateClientSchema = z.object({
   address: z.string().max(1000).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   isActive: z.boolean().optional(),
+  isDefault: z.boolean().optional(),
 });
 
 export const listClientsQuerySchema = z.object({
@@ -47,6 +48,7 @@ export const updateClientSiteSchema = z.object({
   city: z.string().max(100).optional().nullable(),
   notes: z.string().max(2000).optional().nullable(),
   isActive: z.boolean().optional(),
+  isDefault: z.boolean().optional(),
 });
 
 // ─── Client Rate Rule ────────────────────────────────────────────────────────
