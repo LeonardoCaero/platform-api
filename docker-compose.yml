@@ -5,7 +5,6 @@ services:
     image: postgres:16
     container_name: caero_db
     restart: unless-stopped
-    # Only for local
     ports:
       - "5433:5432"
     environment:
@@ -29,6 +28,8 @@ services:
       dockerfile: Dockerfile
     container_name: caero_api
     restart: unless-stopped
+    expose:
+      - "3000"
     ports:
       - "4000:3000"
     environment:
@@ -58,14 +59,35 @@ services:
       context: ../platform-frontend
       dockerfile: Dockerfile
       args:
-        # URL accessible from the browser — use your NAS IP or domain
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000/api}
+        # URL accessible from the browser
+        VITE_API_URL: ${VITE_API_URL:-https://plataforma-lcl.ddns.net/api}
     container_name: caero_frontend
     restart: unless-stopped
+    expose:
+      - "80"
     ports:
       - "8080:80"
     depends_on:
       - caero_api
+    networks:
+      - caero_net
+
+  # ── Reverse proxy + TLS ──────────────────────────────────────────────────────
+  caero_caddy:
+    image: caddy:2-alpine
+    container_name: caero_caddy
+    restart: unless-stopped
+    profiles: ["prod"]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - caero_api
+      - caero_frontend
     networks:
       - caero_net
 
@@ -75,3 +97,5 @@ networks:
 
 volumes:
   caero_pgdata:
+  caddy_data:
+  caddy_config:

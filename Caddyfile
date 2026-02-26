@@ -1,0 +1,11 @@
+plataforma-lcl.ddns.net {
+    # API requests → backend
+    handle /api/* {
+        reverse_proxy caero_api:3000
+    }
+
+    # Everything else → frontend
+    handle {
+        reverse_proxy caero_frontend:80
+    }
+}

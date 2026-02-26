@@ -37,7 +37,7 @@ jobs:
             git clean -fd
 
             echo "Rebuilding and starting caero_api..."
-            docker compose up -d --build --no-deps caero_api
+            docker compose --profile prod up -d --build --no-deps caero_api caero_caddy
 
             echo "Cleaning up old images..."
             docker image prune -f
