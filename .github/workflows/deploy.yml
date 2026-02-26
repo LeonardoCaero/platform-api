@@ -37,7 +37,10 @@ jobs:
             git clean -fd
 
             echo "Rebuilding and starting caero_api..."
-            docker compose --profile prod up -d --build --no-deps caero_api caero_caddy
+            docker compose --profile prod up -d --build --no-deps caero_api
+
+            echo "Ensuring caero_caddy is running..."
+            docker compose --profile prod up -d caero_caddy
 
             echo "Cleaning up old images..."
             docker image prune -f
