@@ -1,6 +1,6 @@
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
-import { MembershipStatus } from '@prisma/client';
+import { assertOwnerOrAdmin, assertMember } from '@/common/utils/membership.util';
 import type {
   CreateClientDto,
   UpdateClientDto,
@@ -12,33 +12,6 @@ import type {
   CreateClientRateRuleResourceDto,
   UpdateClientRateRuleResourceDto,
 } from '../schemas/clients.schema';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-async function assertOwnerOrAdmin(userId: string, companyId: string, isPlatformAdmin: boolean) {
-  if (isPlatformAdmin) return;
-  const membership = await prisma.membership.findFirst({
-    where: {
-      userId,
-      companyId,
-      status: MembershipStatus.ACTIVE,
-      roles: { some: { role: { name: { in: ['Owner', 'Admin'] } } } },
-    },
-  });
-  if (!membership) {
-    throw ApiError.forbidden('Only company owners or admins can manage clients');
-  }
-}
-
-async function assertMember(userId: string, companyId: string, isPlatformAdmin: boolean) {
-  if (isPlatformAdmin) return;
-  const membership = await prisma.membership.findFirst({
-    where: { userId, companyId, status: MembershipStatus.ACTIVE },
-  });
-  if (!membership) {
-    throw ApiError.forbidden('You are not an active member of this company');
-  }
-}
 
 // ─── Clients ─────────────────────────────────────────────────────────────────
 

@@ -1,6 +1,15 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/db/prisma';
+import { env } from '@/config/env';
+
+function expiryMs(duration: string): number {
+  const value = parseInt(duration, 10);
+  if (duration.endsWith('d')) return value * 86_400_000;
+  if (duration.endsWith('h')) return value * 3_600_000;
+  if (duration.endsWith('m')) return value * 60_000;
+  return value * 1_000;
+}
 
 export const generateRefreshToken = async (userId: string): Promise<string> => {
   const token = crypto.randomBytes(32).toString('hex');
@@ -10,7 +19,7 @@ export const generateRefreshToken = async (userId: string): Promise<string> => {
     data: {
       userId,
       tokenHash,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      expiresAt: new Date(Date.now() + expiryMs(env.REFRESH_TOKEN_EXPIRES_IN)),
     },
   });
 

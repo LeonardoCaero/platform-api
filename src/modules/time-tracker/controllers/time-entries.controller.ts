@@ -1,12 +1,11 @@
 import type { Request, Response } from 'express';
-import { z } from 'zod';
 import { TimeEntriesService } from '../services/time-entries.service';
 import {
   createTimeEntrySchema,
   updateTimeEntrySchema,
   listTimeEntriesQuerySchema,
+  getSummaryQuerySchema,
 } from '../schemas/time-entries.schema';
-import { prisma } from '@/db/prisma';
 
 const timeEntriesService = new TimeEntriesService();
 
@@ -34,29 +33,6 @@ export class TimeEntriesController {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
     const query = listTimeEntriesQuerySchema.parse(req.query);
-
-    // Non-admin users can only see their own entries unless they are Owner/Admin of the company
-    if (!isPlatformAdmin && query.companyId) {
-      const isOwnerOrAdmin = await prisma.membership.findFirst({
-        where: {
-          userId,
-          companyId: query.companyId,
-          status: 'ACTIVE',
-          roles: {
-            some: {
-              role: { name: { in: ['Owner', 'Admin'] } },
-            },
-          },
-        },
-      });
-
-      if (!isOwnerOrAdmin) {
-        // Force filter to own entries only
-        query.userId = userId;
-      }
-    } else if (!isPlatformAdmin) {
-      query.userId = userId;
-    }
 
     const result = await timeEntriesService.list(query, userId, isPlatformAdmin);
 
@@ -122,11 +98,7 @@ export class TimeEntriesController {
    */
   async getSummary(req: Request, res: Response) {
     const userId = req.user!.userId;
-    const { companyId, startDate, endDate } = z.object({
-      companyId: z.string().uuid(),
-      startDate: z.string().transform(val => new Date(val)),
-      endDate: z.string().transform(val => new Date(val)),
-    }).parse(req.query);
+    const { companyId, startDate, endDate } = getSummaryQuerySchema.parse(req.query);
 
     const summary = await timeEntriesService.getSummary(companyId, userId, startDate, endDate);
 

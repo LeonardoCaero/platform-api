@@ -1,10 +1,5 @@
 import type { Response } from 'express';
 
-interface SSEClient {
-  res: Response;
-  userId: string;
-}
-
 class SSEManager {
   private clients: Map<string, Set<Response>> = new Map();
 

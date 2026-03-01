@@ -1,7 +1,7 @@
-import { CompanyRequestStatus } from '@prisma/client';
-import { prisma } from '../../../db/prisma';
-import { CreateCompanyRequestDto, ListCompanyRequestsDto, ReviewCompanyRequestDto, UpdateCompanyRequestDto } from '../schemas/company-request.schema';
-import { ApiError } from '../../../common/errors/api-error';
+import { CompanyRequestStatus, Prisma } from '@prisma/client';
+import { prisma } from '@/db/prisma';
+import type { CreateCompanyRequestDto, ListCompanyRequestsDto, ReviewCompanyRequestDto, UpdateCompanyRequestDto } from '../schemas/company-request.schema';
+import { ApiError } from '@/common/errors/api-error';
 
 export class CompanyRequestService {
   /**
@@ -17,7 +17,7 @@ export class CompanyRequestService {
     });
 
     if (existingPending) {
-      throw new ApiError({ message: 'You already have a pending company request', statusCode: 409 });
+      throw ApiError.conflict('You already have a pending company request');
     }
 
     // Check if slug is already taken
@@ -26,7 +26,7 @@ export class CompanyRequestService {
     });
 
     if (existingCompany) {
-      throw new ApiError({ message: 'Company slug is already taken', statusCode: 409 });
+      throw ApiError.conflict('Company slug is already taken');
     }
 
     const companyRequest = await prisma.companyRequest.create({
@@ -59,7 +59,7 @@ export class CompanyRequestService {
     const { status, page = 1, limit = 10 } = dto;
     const skip = (page - 1) * limit;
 
-    const where: any = { userId };
+    const where: Prisma.CompanyRequestWhereInput = { userId };
     if (status) {
       where.status = status;
     }
@@ -118,7 +118,7 @@ export class CompanyRequestService {
     const { status, page = 1, limit = 10 } = dto;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.CompanyRequestWhereInput = {};
     if (status) {
       where.status = status;
     }
@@ -205,12 +205,12 @@ export class CompanyRequestService {
     });
 
     if (!request) {
-      throw new ApiError({ message: 'Company request not found', statusCode: 404 });
+      throw ApiError.notFound('Company request not found');
     }
 
     // Non-admins can only view their own requests
     if (userId && request.userId !== userId) {
-      throw new ApiError({ message: 'You can only view your own requests', statusCode: 403 });
+      throw ApiError.forbidden('You can only view your own requests');
     }
 
     return request;
@@ -225,15 +225,15 @@ export class CompanyRequestService {
     });
 
     if (!request) {
-      throw new ApiError({ message: 'Company request not found', statusCode: 404 });
+      throw ApiError.notFound('Company request not found');
     }
 
     if (request.userId !== userId) {
-      throw new ApiError({ message: 'You can only update your own requests', statusCode: 403 });
+      throw ApiError.forbidden('You can only update your own requests');
     }
 
     if (request.status !== CompanyRequestStatus.PENDING) {
-      throw new ApiError({ message: 'Only pending requests can be updated', statusCode: 400 });
+      throw ApiError.badRequest('Only pending requests can be updated');
     }
 
     // If slug is being changed, check availability
@@ -243,7 +243,7 @@ export class CompanyRequestService {
       });
 
       if (existingCompany) {
-        throw new ApiError({ message: 'Company slug is already taken', statusCode: 409 });
+        throw ApiError.conflict('Company slug is already taken');
       }
     }
 
@@ -279,15 +279,15 @@ export class CompanyRequestService {
     });
 
     if (!request) {
-      throw new ApiError({ message: 'Company request not found', statusCode: 404 });
+      throw ApiError.notFound('Company request not found');
     }
 
     if (request.userId !== userId) {
-      throw new ApiError({ message: 'You can only cancel your own requests', statusCode: 403 });
+      throw ApiError.forbidden('You can only cancel your own requests');
     }
 
     if (request.status !== CompanyRequestStatus.PENDING) {
-      throw new ApiError({ message: 'Only pending requests can be cancelled', statusCode: 400 });
+      throw ApiError.badRequest('Only pending requests can be cancelled');
     }
 
     const cancelled = await prisma.companyRequest.update({
@@ -322,11 +322,11 @@ export class CompanyRequestService {
     });
 
     if (!request) {
-      throw new ApiError({ message: 'Company request not found', statusCode: 404 });
+      throw ApiError.notFound('Company request not found');
     }
 
     if (request.status !== CompanyRequestStatus.PENDING) {
-      throw new ApiError({ message: 'Only pending requests can be reviewed', statusCode: 400 });
+      throw ApiError.badRequest('Only pending requests can be reviewed');
     }
 
     const newStatus = dto.action === 'approve' ? CompanyRequestStatus.APPROVED : CompanyRequestStatus.REJECTED;
@@ -341,7 +341,7 @@ export class CompanyRequestService {
       });
 
       if (!permission) {
-        throw new ApiError({ message: 'Permission "COMPANY:CREATE" not found in database', statusCode: 500 });
+        throw ApiError.internal('Permission "COMPANY:CREATE" not found in database');
       }
 
       // Grant permission to user (if not already granted)
@@ -388,8 +388,6 @@ export class CompanyRequestService {
         },
       },
     });
-
-    // TODO: Send notification/email to user about the decision
 
     return reviewed;
   }

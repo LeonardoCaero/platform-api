@@ -2,9 +2,6 @@
 import { ApiError } from '@/common/errors/api-error';
 import { sseManager } from '@/common/services/sse.manager';
 
-const err = (message: string, statusCode: number) =>
-  new ApiError({ message, statusCode });
-
 function mapUser(user: { id: string; email: string; fullName: string; avatar: string | null }) {
   const parts = user.fullName.trim().split(' ');
   return {
@@ -94,12 +91,12 @@ export class MembershipsService {
     department?: string;
   }) {
     const user = await prisma.user.findUnique({ where: { id: data.userId } });
-    if (!user) throw err('User not found', 404);
+    if (!user) throw ApiError.notFound('User not found');
 
     const existing = await prisma.membership.findUnique({
       where: { companyId_userId: { companyId, userId: data.userId } },
     });
-    if (existing) throw err('User is already a member of this company', 409);
+    if (existing) throw ApiError.conflict('User is already a member of this company');
 
     // Auto-assign the default role of this company if one exists
     const defaultRole = await prisma.role.findFirst({
@@ -146,7 +143,7 @@ export class MembershipsService {
 
   async updateMemberRoles(companyId: string, memberId: string, roleIds: string[]) {
     const membership = await prisma.membership.findFirst({ where: { id: memberId, companyId } });
-    if (!membership) throw err('Member not found', 404);
+    if (!membership) throw ApiError.notFound('Member not found');
 
     await prisma.membershipRole.deleteMany({ where: { membershipId: memberId } });
     if (roleIds.length > 0) {
@@ -164,7 +161,7 @@ export class MembershipsService {
 
   async removeMember(companyId: string, memberId: string) {
     const membership = await prisma.membership.findFirst({ where: { id: memberId, companyId } });
-    if (!membership) throw err('Member not found', 404);
+    if (!membership) throw ApiError.notFound('Member not found');
     await prisma.membership.delete({ where: { id: memberId } });
   }
 
@@ -184,7 +181,7 @@ export class MembershipsService {
     const existing = await prisma.role.findUnique({
       where: { companyId_name: { companyId, name: data.name } },
     });
-    if (existing) throw err('A role with this name already exists', 409);
+    if (existing) throw ApiError.conflict('A role with this name already exists');
 
     const role = await prisma.role.create({
       data: { companyId, ...data },
@@ -195,7 +192,7 @@ export class MembershipsService {
 
   async updateRole(companyId: string, roleId: string, data: { name?: string; description?: string; color?: string }) {
     const role = await prisma.role.findFirst({ where: { id: roleId, companyId } });
-    if (!role) throw err('Role not found', 404);
+    if (!role) throw ApiError.notFound('Role not found');
 
     const updated = await prisma.role.update({
       where: { id: roleId },
@@ -207,8 +204,8 @@ export class MembershipsService {
 
   async deleteRole(companyId: string, roleId: string) {
     const role = await prisma.role.findFirst({ where: { id: roleId, companyId } });
-    if (!role) throw err('Role not found', 404);
-    if (role.isSystem) throw err('Cannot delete system roles', 403);
+    if (!role) throw ApiError.notFound('Role not found');
+    if (role.isSystem) throw ApiError.forbidden('Cannot delete system roles');
     await prisma.role.delete({ where: { id: roleId } });
   }
 
@@ -245,7 +242,7 @@ export class MembershipsService {
     const membership = await prisma.membership.findFirst({
       where: { id: membershipId, userId, status: 'INVITED' },
     });
-    if (!membership) throw err('Invitation not found', 404);
+    if (!membership) throw ApiError.notFound('Invitation not found');
 
     await prisma.membership.update({
       where: { id: membershipId },
@@ -257,7 +254,7 @@ export class MembershipsService {
     const membership = await prisma.membership.findFirst({
       where: { id: membershipId, userId, status: 'INVITED' },
     });
-    if (!membership) throw err('Invitation not found', 404);
+    if (!membership) throw ApiError.notFound('Invitation not found');
 
     await prisma.membership.delete({ where: { id: membershipId } });
   }

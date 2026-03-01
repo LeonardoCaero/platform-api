@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '@/db/prisma';
+import { ApiError } from '@/common/errors/api-error';
 
 declare global {
   namespace Express {
@@ -52,10 +53,7 @@ export const requirePlatformAdmin = async (
     const userId = req.user?.userId;
 
     if (!userId) {
-      return res.status(401).json({
-        success: false,
-        message: 'Authentication required',
-      });
+      return next(ApiError.unauthorized('Authentication required'));
     }
 
     const platformAdmin = await prisma.platformAdmin.findUnique({
@@ -63,10 +61,7 @@ export const requirePlatformAdmin = async (
     });
 
     if (!platformAdmin) {
-      return res.status(403).json({
-        success: false,
-        message: 'Platform admin access required',
-      });
+      return next(ApiError.forbidden('Platform admin access required'));
     }
 
     req.isPlatformAdmin = true;

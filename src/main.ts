@@ -1,10 +1,10 @@
-import "dotenv/config";
 import http from "http";
 import app from "./app";
 import { prisma } from "./db/prisma";
 import { logger } from "./common/logger/logger";
+import { env } from "./config/env";
 
-const PORT = Number(process.env.PORT) || 4000;
+const PORT = env.PORT;
 
 async function bootstrap() {
   let server: http.Server;

@@ -2,8 +2,9 @@ import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import { sseManager } from '@/common/services/sse.manager';
 import type { CreateTimeEntryDto, UpdateTimeEntryDto, ListTimeEntriesQuery } from '../schemas/time-entries.schema';
-import { MembershipStatus } from '@prisma/client';
+import { MembershipStatus, Prisma } from '@prisma/client';
 import { ClientsService } from '@/modules/clients/services/clients.service';
+import { isOwnerOrAdmin } from '@/common/utils/membership.util';
 
 const clientsService = new ClientsService();
 
@@ -47,20 +48,6 @@ export class TimeEntriesService {
     return [...ids];
   }
 
-  /** Check that userId is an owner/admin of the given company */
-  private async isOwnerOrAdmin(userId: string, companyId: string, isPlatformAdmin: boolean): Promise<boolean> {
-    if (isPlatformAdmin) return true;
-    const m = await prisma.membership.findFirst({
-      where: {
-        userId,
-        companyId,
-        status: MembershipStatus.ACTIVE,
-        roles: { some: { role: { name: { in: ['Owner', 'Admin'] } } } },
-      },
-    });
-    return !!m;
-  }
-
   /**
    * Create a new time entry
    */
@@ -73,7 +60,7 @@ export class TimeEntriesService {
 
     if (targetUserId && targetUserId !== callerId) {
       // Only owner/admin can log for someone else
-      const canManage = await this.isOwnerOrAdmin(callerId, data.companyId, isPlatformAdmin);
+      const canManage = await isOwnerOrAdmin(callerId, data.companyId, isPlatformAdmin);
       if (!canManage) {
         throw ApiError.forbidden('Only company owners or admins can log hours for other members');
       }
@@ -154,7 +141,7 @@ export class TimeEntriesService {
     const { page, limit, companyId, projectId, userId: filterUserId, clientId, categoryId, isOvertime, startDate, endDate } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.TimeEntryWhereInput = {};
 
     if (!isPlatformAdmin) {
       const userMemberships = await prisma.membership.findMany({
@@ -168,23 +155,32 @@ export class TimeEntriesService {
           throw ApiError.forbidden('You do not have access to this company');
         }
         where.companyId = companyId;
+        // Only owners/admins can see all entries in the company; regular members see only their own
+        const canViewAll = await isOwnerOrAdmin(userId, companyId, false);
+        if (canViewAll) {
+          if (filterUserId) where.userId = filterUserId;
+        } else {
+          where.userId = userId;
+        }
       } else {
         where.companyId = { in: companyIds };
+        where.userId = userId;
       }
-    } else if (companyId) {
-      where.companyId = companyId;
+    } else {
+      if (companyId) where.companyId = companyId;
+      if (filterUserId) where.userId = filterUserId;
     }
 
     if (projectId) where.projectId = projectId;
-    if (filterUserId) where.userId = filterUserId;
     if (clientId) where.clientId = clientId;
     if (categoryId) where.categoryId = categoryId;
     if (isOvertime !== undefined) where.isOvertime = isOvertime;
 
     if (startDate || endDate) {
-      where.date = {};
-      if (startDate) where.date.gte = startDate;
-      if (endDate) where.date.lte = endDate;
+      where.date = {
+        ...(startDate && { gte: startDate }),
+        ...(endDate && { lte: endDate }),
+      };
     }
 
     const [timeEntries, total] = await Promise.all([
@@ -227,7 +223,7 @@ export class TimeEntriesService {
 
     if (!isPlatformAdmin && timeEntry.userId !== userId) {
       // Allow owner/admin to edit any entry in their company
-      const canManage = await this.isOwnerOrAdmin(userId, timeEntry.companyId, isPlatformAdmin);
+      const canManage = await isOwnerOrAdmin(userId, timeEntry.companyId, isPlatformAdmin);
       if (!canManage) throw ApiError.forbidden('You can only edit your own time entries');
     }
 
@@ -282,7 +278,7 @@ export class TimeEntriesService {
     const timeEntry = await this.getById(id, userId, isPlatformAdmin);
 
     if (!isPlatformAdmin && timeEntry.userId !== userId) {
-      const canManage = await this.isOwnerOrAdmin(userId, timeEntry.companyId, isPlatformAdmin);
+      const canManage = await isOwnerOrAdmin(userId, timeEntry.companyId, isPlatformAdmin);
       if (!canManage) throw ApiError.forbidden('You do not have permission to delete this entry');
     }
 

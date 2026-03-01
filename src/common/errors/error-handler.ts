@@ -72,7 +72,6 @@ export function apiErrorHandler(err: any, req: Request, res: Response, _next: Ne
     cause: apiErr.details ?? (err?.message ?? String(err)),
     stack: err?.stack,
 
-    // TBD
     requestId: (req as any).id,
     userId: (req as any).context?.userId,
     companyId: (req as any).context?.companyId,

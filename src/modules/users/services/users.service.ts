@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import type { UpdateUserDto, ChangePasswordDto, ListUsersQuery } from '../schemas/users.schema';
@@ -13,7 +14,7 @@ export class UsersService {
     const { page, limit, search } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.UserWhereInput = {};
 
     // Non-admin users only see users from their companies
     if (!isPlatformAdmin) {

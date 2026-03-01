@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { companyRequestService } from '../services/company-request.service';
 import {
   createCompanyRequestSchema,
@@ -130,5 +130,3 @@ export class CompanyRequestController {
     });
   }
 }
-
-export const companyRequestController = new CompanyRequestController();

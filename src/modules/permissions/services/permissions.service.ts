@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import type { CreatePermissionDto, UpdatePermissionDto, ListPermissionsQuery } from '../schemas/permissions.schema';
@@ -42,7 +43,7 @@ export class PermissionsService {
     const { page, limit, search, scope } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.PermissionWhereInput = {};
 
     // Filter by search (key or description)
     if (search) {

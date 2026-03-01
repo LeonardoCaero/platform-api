@@ -1,9 +1,10 @@
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import type { CreateCompanyDto, UpdateCompanyDto, ListCompaniesQuery } from '../schemas/companies.schema';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
-import { MembershipStatus, InviteStatus } from '@prisma/client';
+import { MembershipStatus, InviteStatus, Prisma } from '@prisma/client';
+import { env } from '@/config/env';
 
 export class CompaniesService {
   /**
@@ -123,17 +124,15 @@ export class CompaniesService {
               inviteMessage: invite.inviteMessage,
               issuedByUserId: userId,
               defaultRoleId: invite.roleId || memberRole.id,
-              expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+              expiresAt: new Date(Date.now() + env.MEMBER_INVITE_EXPIRY_HOURS * 60 * 60 * 1000),
             },
           });
 
           invites.push({
             id: memberInvite.id,
             email: invite.email,
-            token: plainToken, // Return plain token for email sending
+            token: plainToken,
           });
-
-          // TODO: Send invitation email with token
         }
       }
 
@@ -186,7 +185,7 @@ export class CompaniesService {
     const { page, limit, search, status, includeDeleted } = query;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: Prisma.CompanyWhereInput = {};
 
     // Non-admin users only see their companies (active memberships only, not invited)
     if (!isPlatformAdmin) {
@@ -438,6 +437,4 @@ export class CompaniesService {
 
     return restored;
   }
-
-  
 }

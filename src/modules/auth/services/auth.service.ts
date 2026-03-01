@@ -130,4 +130,84 @@ export class AuthService {
   async logout(refreshToken: string, userId: string) {
     await revokeRefreshToken(refreshToken, userId);
   }
+
+  async getMe(userId: string) {
+    const [user, platformAdmin, globalPermissions, memberships] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          phone: true,
+          avatar: true,
+          emailVerified: true,
+          lastLoginAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.platformAdmin.findUnique({ where: { userId } }),
+      prisma.userGlobalPermission.findMany({
+        where: { userId },
+        include: {
+          permission: { select: { key: true, description: true } },
+        },
+      }),
+      prisma.membership.findMany({
+        where: { userId, status: 'ACTIVE' },
+        include: {
+          company: {
+            select: { id: true, name: true, slug: true, logo: true, status: true },
+          },
+          roles: {
+            include: {
+              role: {
+                select: {
+                  id: true,
+                  name: true,
+                  color: true,
+                  permissions: {
+                    include: {
+                      permission: { select: { key: true, description: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    if (!user) throw ApiError.notFound('User not found');
+
+    return {
+      ...user,
+      isPlatformAdmin: !!platformAdmin,
+      globalPermissions: globalPermissions.map((gp) => ({
+        key: gp.permission.key,
+        description: gp.permission.description,
+        grantedAt: gp.grantedAt,
+      })),
+      companies: memberships.map((m) => ({
+        id: m.company.id,
+        name: m.company.name,
+        slug: m.company.slug,
+        logo: m.company.logo,
+        status: m.company.status,
+        membershipId: m.id,
+        membershipStatus: m.status,
+        roles: m.roles.map((mr) => ({
+          id: mr.role.id,
+          name: mr.role.name,
+          color: mr.role.color,
+        })),
+        permissions: [
+          ...new Set(
+            m.roles.flatMap((mr) => mr.role.permissions.map((rp) => rp.permission.key))
+          ),
+        ],
+      })),
+    };
+  }
 }

@@ -1,29 +1,16 @@
 import type { Request, Response } from 'express';
-import { z } from 'zod';
 import { MembershipsService } from '../services/memberships.service';
+import {
+  inviteMemberSchema,
+  updateRolesSchema,
+  createRoleSchema,
+  updateRoleSchema,
+} from '../schemas/memberships.schema';
 
 const membershipsService = new MembershipsService();
 
-const inviteMemberSchema = z.object({
-  userId: z.string().uuid(),
-  position: z.string().max(100).optional(),
-  department: z.string().max(100).optional(),
-});
-
-const updateRolesSchema = z.object({
-  roleIds: z.array(z.string().uuid()),
-});
-
-const createRoleSchema = z.object({
-  name: z.string().min(1).max(80),
-  description: z.string().max(255).optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
-});
-
-const updateRoleSchema = createRoleSchema.partial();
-
 export class MembershipsController {
-  // ─── Members ──────────────────────────────────────────────────────────────
+  // Members
 
   async getNonMembers(req: Request, res: Response) {
     const { id: companyId } = req.params;
@@ -58,7 +45,7 @@ export class MembershipsController {
     res.status(204).send();
   }
 
-  // ─── Roles ─────────────────────────────────────────────────────────────────
+  // Roles
 
   async getRoles(req: Request, res: Response) {
     const { id: companyId } = req.params;

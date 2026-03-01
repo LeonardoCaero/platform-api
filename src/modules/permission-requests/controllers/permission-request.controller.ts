@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { permissionRequestService } from '../services/permission-request.service';
 import {
   createPermissionRequestSchema,
@@ -144,5 +144,3 @@ export class PermissionRequestController {
     });
   }
 }
-
-export const permissionRequestController = new PermissionRequestController();

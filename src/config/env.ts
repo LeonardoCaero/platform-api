@@ -13,10 +13,9 @@ const envSchema = z.object({
   // JWT
   JWT_SECRET: z.string().min(4),
   JWT_EXPIRES_IN: z.string().default('15m'),
-  REFRESH_TOKEN_SECRET: z.string().min(4),
   REFRESH_TOKEN_EXPIRES_IN: z.string().default('7d'),
 
-  // Invites
+  // Invite expiry (in hours)
   COMPANY_INVITE_EXPIRY_HOURS: z.string().transform(Number).default(72),
   MEMBER_INVITE_EXPIRY_HOURS: z.string().transform(Number).default(168),
 });
