@@ -23,7 +23,7 @@ set -e
 DOMAIN="plataforma-lcl.ddns.net"
 EMAIL="leo.caero.ledezma@gmail.com"
 NGINX_CONF_SRC="$(dirname "$0")/nas-nginx.conf"
-NGINX_CONF_DEST="/etc/nginx/sites-available/$DOMAIN"
+NGINX_CONF_DEST="/etc/nginx/server.d/plataforma-lcl.ddns.net.conf"
 
 # ── 1. Install certbot if not present ────────────────────────────────────────
 if ! command -v certbot &>/dev/null; then
@@ -54,7 +54,6 @@ certbot certonly \
 # ── 4. Deploy nginx config and restart ────────────────────────────────────────
 echo "### Deploying nginx reverse proxy config for $DOMAIN..."
 cp "$NGINX_CONF_SRC" "$NGINX_CONF_DEST"
-ln -sf "$NGINX_CONF_DEST" "/etc/nginx/sites-enabled/$DOMAIN"
 
 echo "### Starting nginx with SSL config..."
 nginx -t
