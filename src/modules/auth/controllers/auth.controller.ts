@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth.service';
 import { registerSchema, loginSchema, refreshTokenSchema } from '../schemas/auth.schema';
+import { decodeAccessToken } from '@/common/utils/jwt.util';
+import { ApiError } from '@/common/errors/api-error';
 
 const authService = new AuthService();
 
@@ -36,9 +38,13 @@ export class AuthController {
    */
   async refresh(req: Request, res: Response) {
     const { refreshToken } = refreshTokenSchema.parse(req.body);
-    const userId = req.user!.userId; // From auth middleware
 
-    const result = await authService.refresh(refreshToken, userId);
+    const authHeader = req.headers.authorization;
+    const rawToken = authHeader?.startsWith('Bearer ') ? authHeader.substring(7) : null;
+    const payload = rawToken ? decodeAccessToken(rawToken) : null;
+    if (!payload?.userId) throw ApiError.unauthorized('Missing or unreadable access token');
+
+    const result = await authService.refresh(refreshToken, payload.userId);
 
     res.status(200).json({
       success: true,

@@ -16,27 +16,27 @@ export class MembershipsController {
     const { id: companyId } = req.params;
     const search = typeof req.query.search === 'string' ? req.query.search : undefined;
     const users = await membershipsService.searchNonMembers(companyId, search);
-    res.json(users);
+    res.json({ success: true, data: users });
   }
 
   async getMembers(req: Request, res: Response) {
     const { id: companyId } = req.params;
     const members = await membershipsService.getMembers(companyId);
-    res.json(members);
+    res.json({ success: true, data: members });
   }
 
   async inviteMember(req: Request, res: Response) {
     const { id: companyId } = req.params;
     const data = inviteMemberSchema.parse(req.body);
     const member = await membershipsService.inviteMember(companyId, data);
-    res.status(201).json(member);
+    res.status(201).json({ success: true, data: member });
   }
 
   async updateMemberRoles(req: Request, res: Response) {
     const { id: companyId, memberId } = req.params;
     const { roleIds } = updateRolesSchema.parse(req.body);
     const member = await membershipsService.updateMemberRoles(companyId, memberId, roleIds);
-    res.json(member);
+    res.json({ success: true, data: member });
   }
 
   async removeMember(req: Request, res: Response) {
@@ -50,21 +50,21 @@ export class MembershipsController {
   async getRoles(req: Request, res: Response) {
     const { id: companyId } = req.params;
     const roles = await membershipsService.getRoles(companyId);
-    res.json(roles);
+    res.json({ success: true, data: roles });
   }
 
   async createRole(req: Request, res: Response) {
     const { id: companyId } = req.params;
     const data = createRoleSchema.parse(req.body);
     const role = await membershipsService.createRole(companyId, data);
-    res.status(201).json(role);
+    res.status(201).json({ success: true, data: role });
   }
 
   async updateRole(req: Request, res: Response) {
     const { id: companyId, roleId } = req.params;
     const data = updateRoleSchema.parse(req.body);
     const role = await membershipsService.updateRole(companyId, roleId, data);
-    res.json(role);
+    res.json({ success: true, data: role });
   }
 
   async deleteRole(req: Request, res: Response) {

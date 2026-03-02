@@ -7,7 +7,7 @@ export class InvitationsController {
   async getPending(req: Request, res: Response) {
     const userId = req.user!.userId;
     const invitations = await membershipsService.getPendingInvitations(userId);
-    res.json(invitations);
+    res.json({ success: true, data: invitations });
   }
 
   async accept(req: Request, res: Response) {
