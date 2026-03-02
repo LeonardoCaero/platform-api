@@ -36,44 +36,33 @@ fi
 echo "### Creating ACME challenge directory..."
 mkdir -p /var/www/certbot
 
-# ── 3. Deploy nginx config ────────────────────────────────────────────────────
-echo "### Deploying nginx config for $DOMAIN..."
-cp "$NGINX_CONF_SRC" "$NGINX_CONF_DEST"
+# ── 3. Obtain Let's Encrypt certificate (standalone — no nginx conflict) ──────
+# Stop nginx so certbot can bind port 80 directly.
+# This avoids conflicts with UGOS's built-in nginx redirect rules.
+echo "### Stopping nginx temporarily to obtain certificate..."
+systemctl stop nginx
 
-# Enable site
-ln -sf "$NGINX_CONF_DEST" "/etc/nginx/sites-enabled/$DOMAIN"
-
-# Test nginx config
-nginx -t
-
-# Reload nginx so it starts listening for the ACME challenge on port 80
-echo "### Reloading nginx (HTTP only, no cert yet)..."
-# Temporarily comment out the SSL block so nginx can start without the cert
-sed -i 's/listen 443 ssl/listen 443 ssl_disabled/' "/etc/nginx/sites-enabled/$DOMAIN"
-nginx -s reload
-
-sleep 2
-
-# ── 4. Obtain Let's Encrypt certificate ───────────────────────────────────────
 echo "### Requesting certificate for $DOMAIN..."
 certbot certonly \
-  --webroot \
-  --webroot-path=/var/www/certbot \
+  --standalone \
   --email "$EMAIL" \
   --domain "$DOMAIN" \
   --agree-tos \
   --no-eff-email \
   --non-interactive
 
-# ── 5. Re-enable SSL block and reload ─────────────────────────────────────────
-echo "### Enabling HTTPS in nginx config..."
-sed -i 's/listen 443 ssl_disabled/listen 443 ssl/' "/etc/nginx/sites-enabled/$DOMAIN"
-nginx -t
-nginx -s reload
+# ── 4. Deploy nginx config and restart ────────────────────────────────────────
+echo "### Deploying nginx reverse proxy config for $DOMAIN..."
+cp "$NGINX_CONF_SRC" "$NGINX_CONF_DEST"
+ln -sf "$NGINX_CONF_DEST" "/etc/nginx/sites-enabled/$DOMAIN"
 
-# ── 6. Set up automatic renewal via cron ──────────────────────────────────────
+echo "### Starting nginx with SSL config..."
+nginx -t
+systemctl start nginx
+
+# ── 5. Set up automatic renewal via cron ──────────────────────────────────────
 echo "### Setting up auto-renewal cron job..."
-CRON_JOB="0 3 * * * certbot renew --quiet --post-hook 'nginx -s reload'"
+CRON_JOB="0 3 * * * systemctl stop nginx && certbot renew --quiet --standalone && systemctl start nginx"
 ( crontab -l 2>/dev/null | grep -v "certbot renew"; echo "$CRON_JOB" ) | crontab -
 
 echo ""
