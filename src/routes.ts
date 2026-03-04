@@ -11,6 +11,7 @@ import invitationsRoutes from './modules/memberships/routes/invitations.routes';
 import sseRoutes from './modules/sse/routes/sse.routes';
 import clientsRoutes from './modules/clients/routes/clients.routes';
 import categoriesRoutes from './modules/time-entry-categories/routes/categories.routes';
+import calendarNotesRoutes from './modules/calendar-notes/routes/calendar-notes.routes';
 
 const router = Router();
 
@@ -26,5 +27,6 @@ router.use('/invitations', invitationsRoutes);
 router.use('/sse', sseRoutes);
 router.use('/clients', clientsRoutes);
 router.use('/time-entry-categories', categoriesRoutes);
+router.use('/calendar-notes', calendarNotesRoutes);
 
 export default router;

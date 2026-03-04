@@ -129,6 +129,10 @@ model User {
   timeEntries TimeEntry[]
   loggedTimeEntries TimeEntry[] @relation("TimeEntryLoggedBy")
 
+  // Calendar notes
+  createdCalendarNotes CalendarNote[]
+  calendarNoteAssignees CalendarNoteAssignee[]
+
   @@index([email, emailVerified])
   @@index([isDisabled])
 }
@@ -184,6 +188,9 @@ model Company {
 
   // Time entry categories
   timeEntryCategories TimeEntryCategory[]
+
+  // Calendar notes
+  calendarNotes CalendarNote[]
 
   @@index([name])
   @@index([status])
@@ -686,4 +693,40 @@ model TimeEntryCategory {
 
   @@index([companyId, isActive])
   @@unique([companyId, name])
+}
+
+///////////////////////////
+// CALENDAR NOTES
+///////////////////////////
+
+model CalendarNote {
+  id            String   @id @default(uuid()) @db.Uuid
+  companyId     String   @db.Uuid
+  date          DateTime @db.Date
+  title         String   @db.VarChar(200)
+  content       String?  @db.Text
+  color         String?  @db.VarChar(7) @default("#6366F1")
+  createdByUserId String @db.Uuid
+
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  assignees   CalendarNoteAssignee[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, date])
+  @@index([createdByUserId])
+}
+
+model CalendarNoteAssignee {
+  id             String @id @default(uuid()) @db.Uuid
+  calendarNoteId String @db.Uuid
+  userId         String @db.Uuid
+
+  calendarNote CalendarNote @relation(fields: [calendarNoteId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([calendarNoteId, userId])
+  @@index([userId])
 }
