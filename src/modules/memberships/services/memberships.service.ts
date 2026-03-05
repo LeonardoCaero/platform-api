@@ -209,7 +209,7 @@ export class MembershipsService {
     await prisma.role.delete({ where: { id: roleId } });
   }
 
-  // ─── Invitations (user-facing) ─────────────────────────────────────────────
+  // Invitations (user-facing)
 
   async getPendingInvitations(userId: string) {
     const memberships = await prisma.membership.findMany({

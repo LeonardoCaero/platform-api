@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// ─── Client ──────────────────────────────────────────────────────────────────
+// Client
 
 export const createClientSchema = z.object({
   companyId: z.string().uuid(),
@@ -32,7 +32,7 @@ export const listClientsQuerySchema = z.object({
   search: z.string().optional(),
 });
 
-// ─── Client Site ─────────────────────────────────────────────────────────────
+// Client Site
 
 export const createClientSiteSchema = z.object({
   name: z.string().min(1).max(255),
@@ -51,7 +51,7 @@ export const updateClientSiteSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 
-// ─── Client Rate Rule ────────────────────────────────────────────────────────
+// Client Rate Rule
 
 const overtimeTriggerSchema = z.enum(['WEEKEND', 'AFTER_HOURS', 'MANUAL']);
 
@@ -83,7 +83,7 @@ export const updateClientRateRuleSchema = z.object({
   effectiveTo: z.string().or(z.date()).transform(v => new Date(v)).optional().nullable(),
 });
 
-// ─── Client Rate Rule Resource ──────────────────────────────────────────────
+// Client Rate Rule Resource
 
 export const createClientRateRuleResourceSchema = z.object({
   name: z.string().min(1).max(100),

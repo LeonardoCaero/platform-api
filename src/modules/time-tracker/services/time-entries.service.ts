@@ -8,7 +8,7 @@ import { isOwnerOrAdmin } from '@/common/utils/membership.util';
 
 const clientsService = new ClientsService();
 
-// ─── includes reused across queries ─────────────────────────────────────────
+// Includes reused across queries
 const ENTRY_INCLUDE = {
   user: { select: { id: true, fullName: true, email: true, avatar: true } },
   project: true,

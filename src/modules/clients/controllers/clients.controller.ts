@@ -15,7 +15,7 @@ import {
 const clientsService = new ClientsService();
 
 export class ClientsController {
-  // ─── Clients ─────────────────────────────────────────────────────────────
+  // Clients
 
   async create(req: Request, res: Response) {
     const userId = req.user!.userId;
@@ -55,7 +55,7 @@ export class ClientsController {
     res.status(200).json({ success: true, ...result });
   }
 
-  // ─── Sites ────────────────────────────────────────────────────────────────
+  // Sites
 
   async createSite(req: Request, res: Response) {
     const userId = req.user!.userId;
@@ -80,7 +80,7 @@ export class ClientsController {
     res.status(200).json({ success: true, ...result });
   }
 
-  // ─── Rate Rules ───────────────────────────────────────────────────────────
+  // Rate Rules
 
   async createRateRule(req: Request, res: Response) {
     const userId = req.user!.userId;
@@ -105,7 +105,7 @@ export class ClientsController {
     res.status(200).json({ success: true, ...result });
   }
 
-  // ─── Resources ───────────────────────────────────────────────────────────────
+  // Resources
 
   async createResource(req: Request, res: Response) {
     const userId = req.user!.userId;

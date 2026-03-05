@@ -13,7 +13,7 @@ import type {
   UpdateClientRateRuleResourceDto,
 } from '../schemas/clients.schema';
 
-// ─── Clients ─────────────────────────────────────────────────────────────────
+// Clients
 
 export class ClientsService {
   async create(data: CreateClientDto, userId: string, isPlatformAdmin: boolean) {
@@ -104,7 +104,7 @@ export class ClientsService {
     return { message: 'Client deleted' };
   }
 
-  // ─── Sites ──────────────────────────────────────────────────────────────────
+  // Sites
 
   async createSite(clientId: string, data: CreateClientSiteDto, userId: string, isPlatformAdmin: boolean) {
     const client = await this.getById(clientId, userId, isPlatformAdmin);
@@ -137,7 +137,7 @@ export class ClientsService {
     return { message: 'Site deleted' };
   }
 
-  // ─── Rate Rules ─────────────────────────────────────────────────────────────
+  // Rate Rules
 
   async createRateRule(clientId: string, data: CreateClientRateRuleDto, userId: string, isPlatformAdmin: boolean) {
     const client = await this.getById(clientId, userId, isPlatformAdmin);
@@ -170,7 +170,7 @@ export class ClientsService {
     return { message: 'Rate rule deleted' };
   }
 
-  // ─── Rate Rule Resources ────────────────────────────────────────────────────
+  // Rate Rule Resources
 
   async createResource(ruleId: string, data: CreateClientRateRuleResourceDto, userId: string, isPlatformAdmin: boolean) {
     const rule = await prisma.clientRateRule.findUnique({ where: { id: ruleId }, include: { client: true } });
