@@ -706,6 +706,7 @@ model CalendarNote {
   title         String   @db.VarChar(200)
   content       String?  @db.Text
   color         String?  @db.VarChar(7) @default("#6366F1")
+  isPrivate     Boolean  @default(false)
   createdByUserId String @db.Uuid
 
   company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)

@@ -26,9 +26,8 @@ export class CalendarNotesService {
     const elevated = await isOwnerOrAdmin(callerId, data.companyId, isPlatformAdmin);
 
     const { assigneeUserIds: rawAssigneeIds, ...rest } = data;
-
-    // Regular members can only assign to themselves
-    const assigneeUserIds = elevated ? (rawAssigneeIds ?? []) : [callerId];
+    const isPrivate = rest.isPrivate ?? false;
+    const assigneeUserIds = isPrivate ? [] : (elevated ? (rawAssigneeIds ?? []) : [callerId]);
 
     // Validate all assignees are active members of the company
     if (assigneeUserIds.length > 0) {
@@ -68,6 +67,10 @@ export class CalendarNotesService {
       where: {
         companyId: query.companyId,
         date: { gte: query.startDate, lte: query.endDate },
+        OR: [
+          { isPrivate: false },
+          { isPrivate: true, createdByUserId: callerId },
+        ],
       },
       include: NOTE_INCLUDE,
       orderBy: { date: 'asc' },
@@ -82,6 +85,9 @@ export class CalendarNotesService {
     });
     if (!note) throw ApiError.notFound('Calendar note not found');
     await assertMember(callerId, note.companyId, isPlatformAdmin);
+    if (note.isPrivate && note.createdByUserId !== callerId) {
+      throw ApiError.forbidden('This note is private');
+    }
     return note;
   }
 
@@ -98,9 +104,10 @@ export class CalendarNotesService {
 
     const { assigneeUserIds: rawAssigneeIds, ...rest } = data;
 
-    // Regular members can only assign to themselves
+    const nextIsPrivate = rest.isPrivate !== undefined ? rest.isPrivate : existing.isPrivate;
+
     const assigneeUserIds = rawAssigneeIds !== undefined
-      ? (elevated ? rawAssigneeIds : [callerId])
+      ? (nextIsPrivate ? [] : (elevated ? rawAssigneeIds : [callerId]))
       : undefined;
 
     // If assigneeUserIds provided, validate and replace all assignees
