@@ -54,4 +54,16 @@ export class CalendarNotesController {
     const result = await calendarNotesService.delete(id, userId, isPlatformAdmin);
     res.status(200).json({ success: true, message: result.message });
   }
+
+  async getUpcomingReminderCount(req: Request, res: Response) {
+    const userId = req.user!.userId;
+    const count = await calendarNotesService.getUpcomingReminderCount(userId);
+    res.status(200).json({ success: true, data: { count } });
+  }
+
+  async dismissReminders(req: Request, res: Response) {
+    const userId = req.user!.userId;
+    await calendarNotesService.dismissReminders(userId);
+    res.status(200).json({ success: true });
+  }
 }

@@ -8,6 +8,7 @@ export const createCalendarNoteSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
   isPrivate: z.boolean().default(false),
   assigneeUserIds: z.array(z.string().uuid()).optional().default([]),
+  reminderDaysBefore: z.array(z.number().int().min(0).max(365)).optional().default([]),
 });
 
 export const updateCalendarNoteSchema = z.object({
@@ -17,6 +18,7 @@ export const updateCalendarNoteSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional().nullable(),
   isPrivate: z.boolean().optional(),
   assigneeUserIds: z.array(z.string().uuid()).optional(),
+  reminderDaysBefore: z.array(z.number().int().min(0).max(365)).optional(),
 });
 
 export const listCalendarNotesQuerySchema = z.object({

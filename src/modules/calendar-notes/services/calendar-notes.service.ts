@@ -22,6 +22,33 @@ const NOTE_INCLUDE = {
   },
 } as const;
 
+async function syncReminderNotifications(
+  noteId: string,
+  noteDate: Date,
+  reminderDaysBefore: number[],
+  recipientUserIds: string[],
+) {
+  await prisma.reminderNotification.deleteMany({ where: { calendarNoteId: noteId } });
+
+  if (reminderDaysBefore.length === 0 || recipientUserIds.length === 0) return;
+
+  const uniqueRecipients = [...new Set(recipientUserIds)];
+  const records: { calendarNoteId: string; userId: string; scheduledFor: Date; daysBeforeDue: number }[] = [];
+
+  for (const days of reminderDaysBefore) {
+    const fireDate = new Date(noteDate);
+    fireDate.setUTCDate(fireDate.getUTCDate() - days);
+
+    for (const userId of uniqueRecipients) {
+      records.push({ calendarNoteId: noteId, userId, scheduledFor: fireDate, daysBeforeDue: days });
+    }
+  }
+
+  if (records.length > 0) {
+    await prisma.reminderNotification.createMany({ data: records, skipDuplicates: true });
+  }
+}
+
 export class CalendarNotesService {
   /** Returns all active member IDs of a company, excluding the given user. */
   private async getCompanyMemberIds(companyId: string, excludeUserId: string): Promise<string[]> {
@@ -37,7 +64,7 @@ export class CalendarNotesService {
 
     const elevated = await isOwnerOrAdmin(callerId, data.companyId, isPlatformAdmin);
 
-    const { assigneeUserIds: rawAssigneeIds, ...rest } = data;
+    const { assigneeUserIds: rawAssigneeIds, reminderDaysBefore = [], ...rest } = data;
     const isPrivate = rest.isPrivate ?? false;
     const assigneeUserIds = isPrivate ? [] : (elevated ? (rawAssigneeIds ?? []) : [callerId]);
 
@@ -62,6 +89,7 @@ export class CalendarNotesService {
       data: {
         ...rest,
         createdByUserId: callerId,
+        reminderDaysBefore,
         assignees:
           assigneeUserIds.length > 0
             ? { create: assigneeUserIds.map(userId => ({ userId })) }
@@ -69,6 +97,9 @@ export class CalendarNotesService {
       },
       include: NOTE_INCLUDE,
     });
+
+    const reminderRecipients = isPrivate ? [callerId] : [callerId, ...assigneeUserIds];
+    await syncReminderNotifications(note.id, note.date, reminderDaysBefore, reminderRecipients);
 
     // Notify assignees (skip the creator themselves)
     if (!isPrivate && assigneeUserIds.length > 0) {
@@ -130,7 +161,7 @@ export class CalendarNotesService {
       throw ApiError.forbidden('You can only edit your own notes');
     }
 
-    const { assigneeUserIds: rawAssigneeIds, ...rest } = data;
+    const { assigneeUserIds: rawAssigneeIds, reminderDaysBefore, ...rest } = data;
 
     const nextIsPrivate = rest.isPrivate !== undefined ? rest.isPrivate : existing.isPrivate;
 
@@ -166,9 +197,25 @@ export class CalendarNotesService {
 
     const note = await prisma.calendarNote.update({
       where: { id },
-      data: rest,
+      data: {
+        ...rest,
+        ...(reminderDaysBefore !== undefined ? { reminderDaysBefore } : {}),
+      },
       include: NOTE_INCLUDE,
     });
+
+    // Re-sync reminder notifications when date or reminderDaysBefore changed
+    const noteDate = note.date;
+    const nextReminderDays = reminderDaysBefore !== undefined ? reminderDaysBefore : existing.reminderDaysBefore;
+    if (reminderDaysBefore !== undefined || data.date !== undefined) {
+      const currentAssigneeIds = note.assignees.map(a => a.userId);
+      const recipients = note.isPrivate ? [note.createdByUserId] : [note.createdByUserId, ...currentAssigneeIds];
+      await syncReminderNotifications(id, noteDate, nextReminderDays, recipients);
+    } else if (assigneeUserIds !== undefined) {
+      // Assignees changed — re-sync with existing reminder days
+      const newRecipients = note.isPrivate ? [note.createdByUserId] : [note.createdByUserId, ...note.assignees.map(a => a.userId)];
+      await syncReminderNotifications(id, noteDate, existing.reminderDaysBefore, newRecipients);
+    }
 
     // Notify assignees of the updated note
     if (!note.isPrivate && note.assignees.length > 0) {
@@ -210,5 +257,39 @@ export class CalendarNotesService {
     });
 
     return { message: 'Calendar note deleted successfully' };
+  }
+
+  /** Count of pending (unsent, undismissed) reminder notifications due today or overdue. */
+  async getUpcomingReminderCount(userId: string): Promise<number> {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    return prisma.reminderNotification.count({
+      where: {
+        userId,
+        sentAt: null,
+        dismissedAt: null,
+        scheduledFor: { lt: tomorrow }, // today or earlier
+      },
+    });
+  }
+
+  /** Dismiss all pending due reminders for a user (marks them as read in the bell). */
+  async dismissReminders(userId: string): Promise<void> {
+    const today = new Date();
+    today.setUTCHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+
+    await prisma.reminderNotification.updateMany({
+      where: {
+        userId,
+        dismissedAt: null,
+        scheduledFor: { lt: tomorrow },
+      },
+      data: { dismissedAt: new Date() },
+    });
   }
 }

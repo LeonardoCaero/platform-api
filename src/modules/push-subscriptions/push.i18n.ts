@@ -55,6 +55,11 @@ const messages = {
       body: `${hours}h logged for "${title}" on ${fmt(date, 'en')}.`,
       url: '/time-tracker',
     }),
+    reminderDue: (title: string, date: Date, daysLeft: number): PushPayload => ({
+      title: daysLeft === 0 ? 'Reminder: today!' : `Reminder in ${daysLeft} day${daysLeft > 1 ? 's' : ''}`,
+      body: `${title} — ${fmt(date, 'en')}`,
+      url: '/calendar',
+    }),
   },
   es: {
     calendarNoteCreated: (title: string, date: Date): PushPayload => ({
@@ -96,6 +101,11 @@ const messages = {
       title: 'Horas registradas en tu nombre',
       body: `${hours}h registradas para "${title}" el ${fmt(date, 'es')}.`,
       url: '/time-tracker',
+    }),
+    reminderDue: (title: string, date: Date, daysLeft: number): PushPayload => ({
+      title: daysLeft === 0 ? '¡Recordatorio: hoy!' : `Recordatorio en ${daysLeft} día${daysLeft > 1 ? 's' : ''}`,
+      body: `${title} — ${fmt(date, 'es')}`,
+      url: '/calendar',
     }),
   },
 };

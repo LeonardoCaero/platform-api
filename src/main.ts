@@ -3,6 +3,7 @@ import app from "./app";
 import { prisma } from "./db/prisma";
 import { logger } from "./common/logger/logger";
 import { env } from "./config/env";
+import { startScheduler } from "./scheduler";
 
 const PORT = env.PORT;
 
@@ -14,6 +15,8 @@ async function bootstrap() {
 
     await prisma.$connect();
     logger.info("Database connected");
+
+    startScheduler();
 
     server = http.createServer(app);
 

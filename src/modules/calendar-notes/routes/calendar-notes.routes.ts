@@ -10,6 +10,8 @@ const calendarNotesController = new CalendarNotesController();
 router.use(authMiddleware);
 router.use(checkPlatformAdmin);
 
+router.get('/upcoming-reminders', asyncHandler(calendarNotesController.getUpcomingReminderCount));
+router.post('/dismiss-reminders', asyncHandler(calendarNotesController.dismissReminders));
 router.post('/', asyncHandler(calendarNotesController.create));
 router.get('/', asyncHandler(calendarNotesController.list));
 router.get('/:id', asyncHandler(calendarNotesController.getById));
