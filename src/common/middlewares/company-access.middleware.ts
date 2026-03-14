@@ -26,13 +26,12 @@ export const checkCompanyAccess = async (
       return next();
     }
 
-    // Check if user has membership in this company
-    const membership = await prisma.membership.findUnique({
+    // Check if user has an active membership in this company
+    const membership = await prisma.membership.findFirst({
       where: {
-        companyId_userId: {
-          companyId,
-          userId,
-        },
+        companyId,
+        userId,
+        status: 'ACTIVE',
       },
     });
 

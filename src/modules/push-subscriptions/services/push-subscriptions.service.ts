@@ -1,11 +1,12 @@
 import webpush from 'web-push';
 import { prisma } from '@/db/prisma';
+import { env } from '@/config/env';
 import { sseManager } from '@/common/services/sse.manager';
 import type { PushPayload } from '../push.i18n';
 
-const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidSubject = process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com';
+const vapidPublicKey = env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = env.VAPID_PRIVATE_KEY;
+const vapidSubject = env.VAPID_SUBJECT;
 
 if (vapidPublicKey && vapidPrivateKey) {
   webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
