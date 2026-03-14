@@ -42,6 +42,9 @@ coverage/
 # Kerno
 .kerno/
 
+# Bruno
+bruno/environments/*.secret.bru
+
 # Prisma
 #migrations/
 users/backend/src/generated/

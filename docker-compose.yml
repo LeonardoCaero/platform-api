@@ -1,6 +1,6 @@
 services:
 
-  # ── Database ────────────────────────────────────────────────────────────────
+  # DB
   caero_db:
     image: postgres:16
     container_name: caero_db
@@ -21,7 +21,7 @@ services:
     networks:
       - caero_net
 
-  # ── API ─────────────────────────────────────────────────────────────────────
+  # API
   caero_api:
     build:
       context: .
@@ -51,13 +51,12 @@ services:
     networks:
       - caero_net
 
-  # ── Frontend ─────────────────────────────────────────────────────────────────
+  # FRONTEND
   caero_frontend:
     build:
       context: ../platform-frontend
       dockerfile: Dockerfile
       args:
-        # URL accessible from the browser — system nginx proxies /api to 127.0.0.1:4000
         VITE_API_URL: ${VITE_API_URL:-https://plataforma-lcl.ddns.net/api}
     container_name: caero_frontend
     restart: unless-stopped

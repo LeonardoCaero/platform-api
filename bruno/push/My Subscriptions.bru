@@ -1,0 +1,15 @@
+meta {
+  name: My Subscriptions
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/push/subscriptions/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

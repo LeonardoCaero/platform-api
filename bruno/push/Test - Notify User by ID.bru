@@ -1,0 +1,15 @@
+meta {
+  name: Test - Notify User by ID
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/push/test/{{userId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

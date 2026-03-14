@@ -1,0 +1,21 @@
+meta {
+  name: Unsubscribe
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/push/unsubscribe
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/..."
+  }
+}
