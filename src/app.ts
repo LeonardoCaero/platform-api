@@ -5,11 +5,12 @@ import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
 import routes from './routes';
 import { apiErrorHandler } from './common/errors/error-handler';
+import { requestIdMiddleware } from './common/middlewares/request-id.middleware';
 import { env } from './config/env';
 
 const app = express();
 
-
+app.use(requestIdMiddleware);
 app.use(helmet());
 
 const allowedOrigins = env.CORS_ORIGINS.split(',').map(o => o.trim());
@@ -28,9 +29,7 @@ app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-if (env.NODE_ENV !== 'production') {
-  app.use(morgan("dev"));
-}
+app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 
 app.get("/health", (_req, res) => {

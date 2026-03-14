@@ -5,10 +5,12 @@ import { env } from '@/config/env';
 
 function expiryMs(duration: string): number {
   const value = parseInt(duration, 10);
+  if (isNaN(value)) throw new Error(`Invalid duration: '${duration}'`);
   if (duration.endsWith('d')) return value * 86_400_000;
   if (duration.endsWith('h')) return value * 3_600_000;
   if (duration.endsWith('m')) return value * 60_000;
-  return value * 1_000;
+  if (duration.endsWith('s')) return value * 1_000;
+  throw new Error(`Unsupported duration suffix in '${duration}'. Use d/h/m/s.`);
 }
 
 export const generateRefreshToken = async (userId: string): Promise<string> => {

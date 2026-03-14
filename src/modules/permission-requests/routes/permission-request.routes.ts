@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { asyncHandler } from '../../../common/utils/async-handler';
-import { authMiddleware } from '../../../common/middlewares/auth.middleware';
-import { checkPlatformAdmin, requirePlatformAdmin } from '../../../common/middlewares/platform-admin.middleware';
+import { asyncHandler } from '@/common/utils/async-handler';
+import { authMiddleware } from '@/common/middlewares/auth.middleware';
+import { checkPlatformAdmin, requirePlatformAdmin } from '@/common/middlewares/platform-admin.middleware';
 import { PermissionRequestController } from '../controllers/permission-request.controller';
 
 const router = Router();

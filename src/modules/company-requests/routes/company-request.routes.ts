@@ -1,7 +1,7 @@
 import { Router } from 'express';
-import { asyncHandler } from '../../../common/utils/async-handler';
-import { authMiddleware } from '../../../common/middlewares/auth.middleware';
-import { checkPlatformAdmin, requirePlatformAdmin } from '../../../common/middlewares/platform-admin.middleware';
+import { asyncHandler } from '@/common/utils/async-handler';
+import { authMiddleware } from '@/common/middlewares/auth.middleware';
+import { checkPlatformAdmin, requirePlatformAdmin } from '@/common/middlewares/platform-admin.middleware';
 import { CompanyRequestController } from '../controllers/company-request.controller';
 
 const router = Router();
@@ -25,6 +25,6 @@ adminRouter.get('/', asyncHandler(companyRequestController.getAllRequests));
 adminRouter.post('/:id/review', asyncHandler(companyRequestController.review));
 
 // Mount admin routes under /admin
-router.use('/admin/company-requests', adminRouter);
+router.use('/admin', adminRouter);
 
 export default router;

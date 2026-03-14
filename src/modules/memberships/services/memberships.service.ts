@@ -152,17 +152,20 @@ export class MembershipsService {
     const membership = await prisma.membership.findFirst({ where: { id: memberId, companyId } });
     if (!membership) throw ApiError.notFound('Member not found');
 
-    await prisma.membershipRole.deleteMany({ where: { membershipId: memberId } });
-    if (roleIds.length > 0) {
-      await prisma.membershipRole.createMany({
-        data: roleIds.map(roleId => ({ membershipId: memberId, roleId })),
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.membershipRole.deleteMany({ where: { membershipId: memberId } });
+      if (roleIds.length > 0) {
+        await tx.membershipRole.createMany({
+          data: roleIds.map(roleId => ({ membershipId: memberId, roleId })),
+        });
+      }
+      return tx.membership.findUnique({
+        where: { id: memberId },
+        include: memberInclude,
       });
-    }
-
-    const updated = await prisma.membership.findUnique({
-      where: { id: memberId },
-      include: memberInclude,
     });
+
+    if (!updated) throw ApiError.notFound('Member not found after update');
     return mapMembership(updated);
   }
 
