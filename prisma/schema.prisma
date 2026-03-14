@@ -133,6 +133,9 @@ model User {
   createdCalendarNotes CalendarNote[]
   calendarNoteAssignees CalendarNoteAssignee[]
 
+  // Push subscriptions
+  pushSubscriptions PushSubscription[]
+
   @@index([email, emailVerified])
   @@index([isDisabled])
 }
@@ -729,5 +732,24 @@ model CalendarNoteAssignee {
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([calendarNoteId, userId])
+  @@index([userId])
+}
+
+///////////////////////////
+// PUSH NOTIFICATIONS
+///////////////////////////
+
+model PushSubscription {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  endpoint  String   @unique @db.Text
+  p256dh    String   @db.Text
+  auth      String   @db.Text
+  lang      String   @default("en") @db.VarChar(10)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
   @@index([userId])
 }

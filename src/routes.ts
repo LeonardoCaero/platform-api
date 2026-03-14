@@ -12,6 +12,7 @@ import sseRoutes from './modules/sse/routes/sse.routes';
 import clientsRoutes from './modules/clients/routes/clients.routes';
 import categoriesRoutes from './modules/time-entry-categories/routes/categories.routes';
 import calendarNotesRoutes from './modules/calendar-notes/routes/calendar-notes.routes';
+import pushRoutes from './modules/push-subscriptions/routes/push-subscriptions.routes';
 
 const router = Router();
 
@@ -28,5 +29,6 @@ router.use('/sse', sseRoutes);
 router.use('/clients', clientsRoutes);
 router.use('/time-entry-categories', categoriesRoutes);
 router.use('/calendar-notes', calendarNotesRoutes);
+router.use('/push', pushRoutes);
 
 export default router;
