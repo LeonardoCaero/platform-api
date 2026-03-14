@@ -62,7 +62,9 @@ export class CompaniesController {
    */
   async getBySlug(req: Request, res: Response) {
     const { slug } = req.params;
-    const company = await companiesService.getBySlug(slug);
+    const userId = req.user!.userId;
+    const isPlatformAdmin = req.isPlatformAdmin || false;
+    const company = await companiesService.getBySlug(slug, userId, isPlatformAdmin);
 
     res.status(200).json({
       success: true,

@@ -36,18 +36,16 @@ router.get('/', (req: Request, res: Response) => {
   res.setHeader('X-Accel-Buffering', 'no'); // disable nginx buffering
   res.flushHeaders();
 
-  // Register this connection
   sseManager.addClient(userId, res);
 
-  // Send initial "connected" event
   res.write(`event: connected\ndata: ${JSON.stringify({ userId })}\n\n`);
 
-  // Heartbeat every 25 seconds to keep the connection alive
   const heartbeat = setInterval(() => {
     try {
       res.write(': heartbeat\n\n');
     } catch {
       clearInterval(heartbeat);
+      sseManager.removeClient(userId, res);
     }
   }, 25_000);
 

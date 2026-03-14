@@ -302,7 +302,7 @@ export class CompaniesService {
   /**
    * Get company by slug
    */
-  async getBySlug(slug: string) {
+  async getBySlug(slug: string, userId: string, isPlatformAdmin: boolean) {
     const company = await prisma.company.findUnique({
       where: { slug },
       select: {
@@ -321,6 +321,15 @@ export class CompaniesService {
 
     if (!company) {
       throw ApiError.notFound('Company not found');
+    }
+
+    if (!isPlatformAdmin) {
+      const membership = await prisma.membership.findFirst({
+        where: { companyId: company.id, userId, status: 'ACTIVE' },
+      });
+      if (!membership) {
+        throw ApiError.forbidden('You do not have access to this company');
+      }
     }
 
     return company;

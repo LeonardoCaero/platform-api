@@ -48,13 +48,43 @@ async function fireReminderNotifications() {
   await Promise.allSettled(sends);
 }
 
+async function cleanupExpiredTokens() {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [refreshTokens, memberInvites] = await Promise.all([
+    prisma.refreshToken.deleteMany({
+      where: {
+        OR: [
+          { expiresAt: { lt: thirtyDaysAgo } },
+          { revokedAt: { lt: thirtyDaysAgo } },
+        ],
+      },
+    }),
+    prisma.companyMemberInvite.deleteMany({
+      where: {
+        status: { in: ['EXPIRED', 'ACCEPTED', 'DECLINED'] },
+        updatedAt: { lt: thirtyDaysAgo },
+      },
+    }),
+  ]);
+
+  logger.info(`[Scheduler] Token cleanup: removed ${refreshTokens.count} refresh tokens, ${memberInvites.count} old invites`);
+}
+
 export function startScheduler() {
-  // Run every day at 08:00 server time
+  // Run every day at 08:00 UTC
   cron.schedule('0 8 * * *', () => {
     fireReminderNotifications().catch((err) =>
       logger.error('[Scheduler] Unhandled error in reminder job', err),
     );
-  });
+  }, { timezone: 'UTC' });
 
-  logger.info('[Scheduler] Reminder job scheduled (daily at 08:00)');
+  // Run every day at 03:00 UTC — clean up expired/revoked tokens older than 30 days
+  cron.schedule('0 3 * * *', () => {
+    cleanupExpiredTokens().catch((err) =>
+      logger.error('[Scheduler] Unhandled error in token cleanup job', err),
+    );
+  }, { timezone: 'UTC' });
+
+  logger.info('[Scheduler] Jobs scheduled (reminders at 08:00 UTC, cleanup at 03:00 UTC)');
 }
