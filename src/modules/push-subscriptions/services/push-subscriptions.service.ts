@@ -1,5 +1,6 @@
 import webpush from 'web-push';
 import { prisma } from '@/db/prisma';
+import { sseManager } from '@/common/services/sse.manager';
 import type { PushPayload } from '../push.i18n';
 
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -50,6 +51,9 @@ export class PushSubscriptionsService {
 
   async sendToUser(userId: string, buildPayload: (lang: string) => PushPayload): Promise<void> {
     if (!vapidPublicKey || !vapidPrivateKey) return;
+
+    // Skip push if the user already has the app open (they'll see the SSE toast instead)
+    if (sseManager.isConnected(userId)) return;
 
     const subscriptions = await prisma.pushSubscription.findMany({
       where: { userId },

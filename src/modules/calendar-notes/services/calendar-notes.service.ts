@@ -2,6 +2,7 @@ import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import { MembershipStatus } from '@prisma/client';
 import { assertOwnerOrAdmin, assertMember, isOwnerOrAdmin } from '@/common/utils/membership.util';
+import { sseManager } from '@/common/services/sse.manager';
 import { pushService } from '@/modules/push-subscriptions/services/push-subscriptions.service';
 import { t } from '@/modules/push-subscriptions/push.i18n';
 import type {
@@ -22,6 +23,15 @@ const NOTE_INCLUDE = {
 } as const;
 
 export class CalendarNotesService {
+  /** Returns all active member IDs of a company, excluding the given user. */
+  private async getCompanyMemberIds(companyId: string, excludeUserId: string): Promise<string[]> {
+    const memberships = await prisma.membership.findMany({
+      where: { companyId, status: MembershipStatus.ACTIVE },
+      select: { userId: true },
+    });
+    return memberships.map(m => m.userId).filter(id => id !== excludeUserId);
+  }
+
   async create(data: CreateCalendarNoteDto, callerId: string, isPlatformAdmin: boolean) {
     await assertMember(callerId, data.companyId, isPlatformAdmin);
 
@@ -67,6 +77,13 @@ export class CalendarNotesService {
         pushService.sendToUser(uid, lang => t(lang).calendarNoteCreated(note.title, note.date)).catch(() => {});
       });
     }
+
+    // Real-time update for all company members
+    const memberIds = await this.getCompanyMemberIds(note.companyId, callerId);
+    sseManager.sendToUsers(memberIds, 'calendar-note:change', {
+      action: 'created',
+      companyId: note.companyId,
+    });
 
     return note;
   }
@@ -162,6 +179,13 @@ export class CalendarNotesService {
         });
     }
 
+    // Real-time update for all company members
+    const memberIds = await this.getCompanyMemberIds(note.companyId, callerId);
+    sseManager.sendToUsers(memberIds, 'calendar-note:change', {
+      action: 'updated',
+      companyId: note.companyId,
+    });
+
     return note;
   }
 
@@ -177,6 +201,14 @@ export class CalendarNotesService {
     }
 
     await prisma.calendarNote.delete({ where: { id } });
+
+    // Real-time update for all company members
+    const memberIds = await this.getCompanyMemberIds(existing.companyId, callerId);
+    sseManager.sendToUsers(memberIds, 'calendar-note:change', {
+      action: 'deleted',
+      companyId: existing.companyId,
+    });
+
     return { message: 'Calendar note deleted successfully' };
   }
 }

@@ -39,6 +39,11 @@ class SSEManager {
     }
   }
 
+  isConnected(userId: string): boolean {
+    const connections = this.clients.get(userId);
+    return connections !== undefined && connections.size > 0;
+  }
+
   connectedCount(): number {
     let total = 0;
     for (const set of this.clients.values()) total += set.size;
