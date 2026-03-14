@@ -2,6 +2,8 @@ import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import { MembershipStatus } from '@prisma/client';
 import { assertOwnerOrAdmin, assertMember, isOwnerOrAdmin } from '@/common/utils/membership.util';
+import { pushService } from '@/modules/push-subscriptions/services/push-subscriptions.service';
+import { t } from '@/modules/push-subscriptions/push.i18n';
 import type {
   CreateCalendarNoteDto,
   UpdateCalendarNoteDto,
@@ -57,6 +59,15 @@ export class CalendarNotesService {
       },
       include: NOTE_INCLUDE,
     });
+
+    // Notify assignees (skip the creator themselves)
+    if (!isPrivate && assigneeUserIds.length > 0) {
+      const targets = assigneeUserIds.filter(uid => uid !== callerId);
+      targets.forEach(uid => {
+        pushService.sendToUser(uid, lang => t(lang).calendarNoteCreated(note.title, note.date)).catch(() => {});
+      });
+    }
+
     return note;
   }
 
@@ -141,6 +152,16 @@ export class CalendarNotesService {
       data: rest,
       include: NOTE_INCLUDE,
     });
+
+    // Notify assignees of the updated note
+    if (!note.isPrivate && note.assignees.length > 0) {
+      note.assignees
+        .filter(a => a.userId !== callerId)
+        .forEach(a => {
+          pushService.sendToUser(a.userId, lang => t(lang).calendarNoteUpdated(note.title, note.date)).catch(() => {});
+        });
+    }
+
     return note;
   }
 

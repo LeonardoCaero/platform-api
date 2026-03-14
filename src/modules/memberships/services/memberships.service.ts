@@ -1,6 +1,8 @@
 ﻿import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import { sseManager } from '@/common/services/sse.manager';
+import { pushService } from '@/modules/push-subscriptions/services/push-subscriptions.service';
+import { t } from '@/modules/push-subscriptions/push.i18n';
 
 function mapUser(user: { id: string; email: string; fullName: string; avatar: string | null }) {
   const parts = user.fullName.trim().split(' ');
@@ -121,7 +123,12 @@ export class MembershipsService {
       },
     });
 
-    // Push real-time notification to the invited user
+    // Push notifications to the invited user
+    pushService.sendToUser(
+      data.userId,
+      lang => t(lang).memberInvited(membership.company.name),
+    ).catch(() => {});
+
     sseManager.sendToUser(data.userId, 'invitation:new', {
       id: membership.id,
       company: {

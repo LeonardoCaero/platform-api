@@ -1,5 +1,7 @@
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
+import { pushService } from '@/modules/push-subscriptions/services/push-subscriptions.service';
+import { t } from '@/modules/push-subscriptions/push.i18n';
 import type {
   CreatePermissionRequestDto,
   UpdatePermissionRequestDto,
@@ -458,6 +460,15 @@ export class PermissionRequestService {
 
       return updated;
     });
+
+    const approved = dto.action === 'approve';
+    const permissionKey = request.requestedPermission?.key ?? 'permission';
+    pushService.sendToUser(
+      request.userId,
+      lang => approved
+        ? t(lang).permissionRequestApproved(permissionKey)
+        : t(lang).permissionRequestRejected(permissionKey),
+    ).catch(() => {});
 
     return result;
   }

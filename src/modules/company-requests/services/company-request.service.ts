@@ -2,6 +2,8 @@ import { CompanyRequestStatus, Prisma } from '@prisma/client';
 import { prisma } from '@/db/prisma';
 import type { CreateCompanyRequestDto, ListCompanyRequestsDto, ReviewCompanyRequestDto, UpdateCompanyRequestDto } from '../schemas/company-request.schema';
 import { ApiError } from '@/common/errors/api-error';
+import { pushService } from '@/modules/push-subscriptions/services/push-subscriptions.service';
+import { t } from '@/modules/push-subscriptions/push.i18n';
 
 export class CompanyRequestService {
   /**
@@ -388,6 +390,14 @@ export class CompanyRequestService {
         },
       },
     });
+
+    const approved = dto.action === 'approve';
+    pushService.sendToUser(
+      request.userId,
+      lang => approved
+        ? t(lang).companyRequestApproved(request.companyName)
+        : t(lang).companyRequestRejected(request.companyName),
+    ).catch(() => {});
 
     return reviewed;
   }

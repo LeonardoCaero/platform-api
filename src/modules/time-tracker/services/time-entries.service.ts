@@ -1,6 +1,8 @@
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import { sseManager } from '@/common/services/sse.manager';
+import { pushService } from '@/modules/push-subscriptions/services/push-subscriptions.service';
+import { t } from '@/modules/push-subscriptions/push.i18n';
 import type { CreateTimeEntryDto, UpdateTimeEntryDto, ListTimeEntriesQuery } from '../schemas/time-entries.schema';
 import { MembershipStatus, Prisma } from '@prisma/client';
 import { ClientsService } from '@/modules/clients/services/clients.service';
@@ -118,6 +120,14 @@ export class TimeEntriesService {
       },
       include: ENTRY_INCLUDE,
     });
+
+    // Notify the target user when a manager logged hours on their behalf
+    if (loggedByUserId && entryUserId !== callerId) {
+      pushService.sendToUser(
+        entryUserId,
+        lang => t(lang).hoursLogged(String(timeEntry.hours), timeEntry.title, timeEntry.date),
+      ).catch(() => {});
+    }
 
     // Notify owners + platform admins
     const notifyIds = await this.getNotifiableUserIds(timeEntry.companyId, callerId);
