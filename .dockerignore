@@ -7,3 +7,5 @@ logs
 *.md
 .git
 .gitignore
+bruno
+.vscode

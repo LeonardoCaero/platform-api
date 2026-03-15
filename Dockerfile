@@ -38,12 +38,20 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY prisma ./prisma
 COPY prisma.config.ts ./
-COPY src ./src
 
 # Entrypoint: run migrations then start the server
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
 
+# Run as non-root user
+RUN addgroup -S app && adduser -S app -G app \
+    && mkdir -p logs \
+    && chown -R app:app /app
+USER app
+
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
 
 CMD ["./docker-entrypoint.sh"]

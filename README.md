@@ -15,7 +15,6 @@ Multi-tenant REST API built with Express 5, TypeScript, and Prisma. Supports com
 - **Calendar Notes**: Notes assigned to dates and users
 - **Real-Time Notifications**: Server-Sent Events (SSE)
 - **Security**: Password hashing, token revocation, soft deletes, Helmet
-- **Audit Logging**: Event logs with Winston
 
 ## Tech Stack
 
@@ -64,7 +63,7 @@ Multi-tenant REST API built with Express 5, TypeScript, and Prisma. Supports com
    npm run dev
    ```
 
-The API will be available at `http://localhost:4000`
+The API will be available at `http://localhost:3000`
 
 ## Available Scripts
 
@@ -136,8 +135,8 @@ All endpoints are prefixed with `/api`.
 | GET | `/:id` | Get request by ID |
 | PATCH | `/:id` | Update request |
 | POST | `/:id/cancel` | Cancel request |
-| GET | `/admin/company-requests` | (Admin) List all requests |
-| POST | `/admin/company-requests/:id/review` | (Admin) Review request |
+| GET | `/admin` | (Admin) List all requests |
+| POST | `/admin/:id/review` | (Admin) Review request |
 
 ### Permission Requests — `/api/permission-requests`
 | Method | Route | Description |
@@ -154,12 +153,10 @@ All endpoints are prefixed with `/api`.
 ### Permissions — `/api/permissions` *(Platform Admin only)*
 | Method | Route | Description |
 |---|---|---|
-| POST | `/` | Create permission |
 | GET | `/` | List permissions (paginated) |
 | GET | `/all` | List all permissions |
 | GET | `/:id` | Get permission by ID |
-| PATCH | `/:id` | Update permission |
-| DELETE | `/:id` | Delete permission |
+| PATCH | `/:id` | Update description |
 
 ### Time Tracking — `/api/time-entries`
 | Method | Route | Description |
@@ -206,11 +203,24 @@ All endpoints are prefixed with `/api`.
 ### Calendar Notes — `/api/calendar-notes`
 | Method | Route | Description |
 |---|---|---|
+| GET | `/upcoming-reminders` | Get upcoming reminder count |
+| POST | `/dismiss-reminders` | Dismiss reminders |
 | POST | `/` | Create note |
 | GET | `/` | List notes |
 | GET | `/:id` | Get note by ID |
 | PATCH | `/:id` | Update note |
 | DELETE | `/:id` | Delete note |
+
+### Push Notifications — `/api/push`
+| Method | Route | Description |
+|---|---|---|
+| GET | `/vapid-public-key` | Get VAPID public key (public) |
+| POST | `/subscribe` | Subscribe to push notifications |
+| POST | `/unsubscribe` | Unsubscribe |
+| GET | `/subscriptions/me` | List my subscriptions |
+| POST | `/test` | Send test notification to self |
+| GET | `/subscriptions` | (Admin) List all subscriptions |
+| POST | `/test/:userId` | (Admin) Test notification to user |
 
 ### SSE — `/api/sse`
 | Method | Route | Description |

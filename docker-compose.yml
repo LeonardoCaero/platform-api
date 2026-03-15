@@ -52,6 +52,8 @@ services:
     depends_on:
       caero_db:
         condition: service_healthy
+    volumes:
+      - caero_logs:/app/logs
     networks:
       - caero_net
 
@@ -77,3 +79,4 @@ networks:
 
 volumes:
   caero_pgdata:
+  caero_logs:
