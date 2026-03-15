@@ -35,7 +35,7 @@ export const updateTimeEntrySchema = z.object({
 
 export const listTimeEntriesQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(50),
+  limit: z.coerce.number().min(1).max(500).default(50),
   companyId: z.uuid().optional(),
   projectId: z.uuid().optional(),
   userId: z.uuid().optional(),
