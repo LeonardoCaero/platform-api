@@ -7,7 +7,7 @@ export class UploadsController {
       return;
     }
     const base = `${req.protocol}://${req.get('host')}`;
-    res.status(201).json({ url: `${base}/uploads/avatars/${req.file.filename}` });
+    res.status(201).json({ url: `${base}/api/uploads/avatars/${req.file.filename}` });
   };
 
   uploadLogo = (req: Request, res: Response): void => {
@@ -16,6 +16,6 @@ export class UploadsController {
       return;
     }
     const base = `${req.protocol}://${req.get('host')}`;
-    res.status(201).json({ url: `${base}/uploads/logos/${req.file.filename}` });
+    res.status(201).json({ url: `${base}/api/uploads/logos/${req.file.filename}` });
   };
 }

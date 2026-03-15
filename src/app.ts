@@ -35,9 +35,9 @@ app.use(cookieParser());
 
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// Serve uploaded files as static assets (images stay immutable — UUID filenames change on re-upload)
-// Override CORP header: Helmet defaults to same-origin which blocks cross-origin <img> loading in dev
-app.use('/uploads', (_req, res, next) => {
+// /api/uploads/ — served through the existing /api/ nginx proxy block (no extra nginx rule needed)
+// Override CORP header: Helmet defaults to same-origin which blocks cross-origin <img> loading
+app.use('/api/uploads', (_req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
 }, express.static(path.join(process.cwd(), 'uploads'), { maxAge: '30d', immutable: true }));
