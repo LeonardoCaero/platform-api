@@ -54,6 +54,7 @@ services:
         condition: service_healthy
     volumes:
       - caero_logs:/app/logs
+      - caero_uploads:/app/uploads
     networks:
       - caero_net
 
@@ -80,3 +81,4 @@ networks:
 volumes:
   caero_pgdata:
   caero_logs:
+  caero_uploads:

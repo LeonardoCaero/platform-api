@@ -45,7 +45,7 @@ RUN chmod +x docker-entrypoint.sh
 
 # Run as non-root user
 RUN addgroup -S app && adduser -S app -G app \
-    && mkdir -p logs \
+    && mkdir -p logs uploads/avatars uploads/logos \
     && chown -R app:app /app
 USER app
 

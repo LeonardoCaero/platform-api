@@ -1,3 +1,4 @@
+import path from 'path';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -9,6 +10,9 @@ import { requestIdMiddleware } from './common/middlewares/request-id.middleware'
 import { env } from './config/env';
 
 const app = express();
+
+// Trust the first proxy (Nginx) so req.protocol reflects https
+app.set('trust proxy', 1);
 
 app.use(requestIdMiddleware);
 app.use(helmet());
@@ -30,6 +34,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+
+// Serve uploaded files as static assets (images stay immutable — UUID filenames change on re-upload)
+// Override CORP header: Helmet defaults to same-origin which blocks cross-origin <img> loading in dev
+app.use('/uploads', (_req, res, next) => {
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  next();
+}, express.static(path.join(process.cwd(), 'uploads'), { maxAge: '30d', immutable: true }));
 
 
 app.get("/health", (_req, res) => {

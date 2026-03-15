@@ -26,6 +26,9 @@ docker-data/
 # Logs
 logs/
 *.log
+
+# User-uploaded files (served as static assets, stored in Docker volume)
+uploads/
 *.gz
 *.out
 *.zip

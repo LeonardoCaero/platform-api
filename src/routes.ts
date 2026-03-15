@@ -13,6 +13,7 @@ import clientsRoutes from './modules/clients/routes/clients.routes';
 import categoriesRoutes from './modules/time-entry-categories/routes/categories.routes';
 import calendarNotesRoutes from './modules/calendar-notes/routes/calendar-notes.routes';
 import pushRoutes from './modules/push-subscriptions/routes/push-subscriptions.routes';
+import uploadsRoutes from './modules/uploads/routes/uploads.routes';
 
 const router = Router();
 
@@ -30,5 +31,6 @@ router.use('/clients', clientsRoutes);
 router.use('/time-entry-categories', categoriesRoutes);
 router.use('/calendar-notes', calendarNotesRoutes);
 router.use('/push', pushRoutes);
+router.use('/uploads', uploadsRoutes);
 
 export default router;
