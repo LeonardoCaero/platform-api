@@ -13,7 +13,6 @@ export class CompaniesService {
   async create(data: CreateCompanyDto, userId: string) {
     const { inviteMembers, ...companyData } = data;
 
-    // Check if slug is already taken
     const existingCompany = await prisma.company.findUnique({
       where: { slug: companyData.slug },
     });
@@ -22,9 +21,7 @@ export class CompaniesService {
       throw ApiError.conflict('Company slug already exists');
     }
 
-    // Use a transaction to ensure atomicity
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Create the company
       const company = await tx.company.create({
         data: {
           ...companyData,
@@ -33,7 +30,6 @@ export class CompaniesService {
         },
       });
 
-      // 2. Create default roles (Owner, Admin, Manager, Member)
       const ownerRole = await tx.role.create({
         data: {
           companyId: company.id,
@@ -86,7 +82,6 @@ export class CompaniesService {
         },
       });
 
-      // 3. Create membership for the creator (Owner + Active)
       const membership = await tx.membership.create({
         data: {
           companyId: company.id,
@@ -98,7 +93,6 @@ export class CompaniesService {
         },
       });
 
-      // 4. Assign Owner role to creator's membership
       await tx.membershipRole.create({
         data: {
           membershipId: membership.id,
@@ -106,15 +100,61 @@ export class CompaniesService {
         },
       });
 
-      // 5. Send invites to members if provided
+      const allPerms = await tx.permission.findMany({
+        where: { scope: 'COMPANY' },
+        select: { id: true, key: true },
+      });
+
+      const permId = (key: string) => allPerms.find(p => p.key === key)?.id;
+
+      const OWNER_PERMS = [
+        'MEMBER:INVITE','MEMBER:REMOVE','MEMBER:EDIT_ROLE','MEMBER:VIEW_LIST','MEMBER:VIEW_DETAILS',
+        'ROLE:CREATE','ROLE:EDIT','ROLE:DELETE','ROLE:VIEW','ROLE:ASSIGN_PERMISSIONS',
+        'COMPANY:EDIT_SETTINGS','COMPANY:DELETE','COMPANY:VIEW_DETAILS','COMPANY:VIEW_ANALYTICS','COMPANY:EXPORT_DATA',
+        'CLIENT:CREATE','CLIENT:EDIT','CLIENT:DELETE','CLIENT:VIEW',
+        'CATEGORY:CREATE','CATEGORY:EDIT','CATEGORY:DELETE','CATEGORY:VIEW',
+        'TIME:TRACK','TIME:EDIT_OWN','TIME:EDIT_ALL','TIME:VIEW_REPORTS','TIME:APPROVE','TIME:EXPORT',
+        'CALENDAR:CREATE','CALENDAR:EDIT_OWN','CALENDAR:EDIT_ALL',
+      ];
+      const ADMIN_PERMS = OWNER_PERMS.filter(k => k !== 'COMPANY:DELETE');
+      const MANAGER_PERMS = [
+        'MEMBER:VIEW_LIST','MEMBER:VIEW_DETAILS',
+        'ROLE:VIEW',
+        'COMPANY:VIEW_DETAILS',
+        'CLIENT:VIEW',
+        'CATEGORY:VIEW',
+        'TIME:TRACK','TIME:EDIT_OWN','TIME:EDIT_ALL','TIME:VIEW_REPORTS',
+        'CALENDAR:CREATE','CALENDAR:EDIT_OWN','CALENDAR:EDIT_ALL',
+      ];
+      const MEMBER_PERMS = [
+        'MEMBER:VIEW_LIST','MEMBER:VIEW_DETAILS',
+        'ROLE:VIEW',
+        'COMPANY:VIEW_DETAILS',
+        'CLIENT:VIEW',
+        'CATEGORY:VIEW',
+        'TIME:TRACK','TIME:EDIT_OWN',
+        'CALENDAR:CREATE','CALENDAR:EDIT_OWN',
+      ];
+
+      const buildRolePerms = (roleId: string, keys: string[]) =>
+        keys.flatMap(k => { const id = permId(k); return id ? [{ roleId, permissionId: id }] : []; });
+
+      await tx.rolePermission.createMany({
+        data: [
+          ...buildRolePerms(ownerRole.id, OWNER_PERMS),
+          ...buildRolePerms(adminRole.id, ADMIN_PERMS),
+          ...buildRolePerms(managerRole.id, MANAGER_PERMS),
+          ...buildRolePerms(memberRole.id, MEMBER_PERMS),
+        ],
+        skipDuplicates: true,
+      });
+
       const invites: { id: string; email: string; token: string }[] = [];
       if (inviteMembers && inviteMembers.length > 0) {
         for (const invite of inviteMembers) {
-          // Generate secure token
           const plainToken = crypto.randomBytes(32).toString('hex');
           const tokenHash = await bcrypt.hash(plainToken, 10);
 
-          // Create invite
           const memberInvite = await tx.companyMemberInvite.create({
             data: {
               companyId: company.id,
@@ -136,7 +176,6 @@ export class CompaniesService {
         }
       }
 
-      // 6. Mark CompanyRequest as COMPLETED if exists
       const companyRequest = await tx.companyRequest.findFirst({
         where: {
           userId,
@@ -194,7 +233,6 @@ export class CompaniesService {
       };
     }
 
-    // Filter by search (name or slug)
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' as const } },
@@ -202,12 +240,10 @@ export class CompaniesService {
       ];
     }
 
-    // Filter by status
     if (status) {
       where.status = status;
     }
 
-    // Filter deleted companies
     if (!includeDeleted) {
       where.deletedAt = null;
     }
@@ -280,7 +316,6 @@ export class CompaniesService {
       throw ApiError.notFound('Company not found');
     }
 
-    // Verify access for non-admin users
     if (!isPlatformAdmin) {
       const membership = await prisma.membership.findUnique({
         where: {
@@ -347,7 +382,6 @@ export class CompaniesService {
       throw ApiError.notFound('Company not found');
     }
 
-    // If updating slug, check if new slug is available
     if (data.slug && data.slug !== company.slug) {
       const existingCompany = await prisma.company.findUnique({
         where: { slug: data.slug },

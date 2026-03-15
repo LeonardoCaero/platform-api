@@ -1,7 +1,7 @@
 import { prisma } from '@/db/prisma';
 import { ApiError } from '@/common/errors/api-error';
 import { MembershipStatus } from '@prisma/client';
-import { assertOwnerOrAdmin, assertMember, isOwnerOrAdmin } from '@/common/utils/membership.util';
+import { assertMember, hasCompanyPermission } from '@/common/utils/membership.util';
 import { sseManager } from '@/common/services/sse.manager';
 import { pushService } from '@/modules/push-subscriptions/services/push-subscriptions.service';
 import { t } from '@/modules/push-subscriptions/push.i18n';
@@ -62,7 +62,7 @@ export class CalendarNotesService {
   async create(data: CreateCalendarNoteDto, callerId: string, isPlatformAdmin: boolean) {
     await assertMember(callerId, data.companyId, isPlatformAdmin);
 
-    const elevated = await isOwnerOrAdmin(callerId, data.companyId, isPlatformAdmin);
+    const elevated = await hasCompanyPermission(callerId, data.companyId, 'CALENDAR:EDIT_ALL', isPlatformAdmin);
 
     const { assigneeUserIds: rawAssigneeIds, reminderDaysBefore = [], ...rest } = data;
     const isPrivate = rest.isPrivate ?? false;
@@ -154,7 +154,7 @@ export class CalendarNotesService {
     const existing = await prisma.calendarNote.findUnique({ where: { id } });
     if (!existing) throw ApiError.notFound('Calendar note not found');
 
-    const elevated = await isOwnerOrAdmin(callerId, existing.companyId, isPlatformAdmin);
+    const elevated = await hasCompanyPermission(callerId, existing.companyId, 'CALENDAR:EDIT_ALL', isPlatformAdmin);
 
     // Allow if elevated (owner/admin/platform admin) or the creator of the note
     if (!elevated && existing.createdByUserId !== callerId) {
@@ -240,7 +240,7 @@ export class CalendarNotesService {
     const existing = await prisma.calendarNote.findUnique({ where: { id } });
     if (!existing) throw ApiError.notFound('Calendar note not found');
 
-    const elevated = await isOwnerOrAdmin(callerId, existing.companyId, isPlatformAdmin);
+    const elevated = await hasCompanyPermission(callerId, existing.companyId, 'CALENDAR:EDIT_ALL', isPlatformAdmin);
 
     // Allow if elevated (owner/admin/platform admin) or the creator of the note
     if (!elevated && existing.createdByUserId !== callerId) {

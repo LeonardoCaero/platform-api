@@ -9,9 +9,7 @@
  */
 
 export const PERMISSIONS = {
-  // ==========================================
-  // PLATFORM PERMISSIONS (Global Scope)
-  // ==========================================
+  // PLATFORM
   PLATFORM: {
     MANAGE_USERS: 'PLATFORM:MANAGE_USERS',
     MANAGE_PERMISSIONS: 'PLATFORM:MANAGE_PERMISSIONS',
@@ -19,11 +17,9 @@ export const PERMISSIONS = {
     MANAGE_SETTINGS: 'PLATFORM:MANAGE_SETTINGS',
   },
 
-  // ==========================================
-  // COMPANY PERMISSIONS (Company Scope)
-  // ==========================================
+  // COMPANY
   COMPANY: {
-    CREATE: 'COMPANY:CREATE',              // Global permission to create companies
+    CREATE: 'COMPANY:CREATE',
     EDIT_SETTINGS: 'COMPANY:EDIT_SETTINGS',
     DELETE: 'COMPANY:DELETE',
     VIEW_DETAILS: 'COMPANY:VIEW_DETAILS',
@@ -31,7 +27,7 @@ export const PERMISSIONS = {
     EXPORT_DATA: 'COMPANY:EXPORT_DATA',
   },
 
-  // Member Management
+  // MEMBERS
   MEMBER: {
     INVITE: 'MEMBER:INVITE',
     REMOVE: 'MEMBER:REMOVE',
@@ -40,7 +36,7 @@ export const PERMISSIONS = {
     VIEW_DETAILS: 'MEMBER:VIEW_DETAILS',
   },
 
-  // Role Management
+  // ROLES
   ROLE: {
     CREATE: 'ROLE:CREATE',
     EDIT: 'ROLE:EDIT',
@@ -49,7 +45,7 @@ export const PERMISSIONS = {
     ASSIGN_PERMISSIONS: 'ROLE:ASSIGN_PERMISSIONS',
   },
 
-  // Invoice Management (example future module)
+  // INVOICES
   INVOICE: {
     CREATE: 'INVOICE:CREATE',
     EDIT: 'INVOICE:EDIT',
@@ -59,7 +55,7 @@ export const PERMISSIONS = {
     EXPORT: 'INVOICE:EXPORT',
   },
 
-  // Report Management
+  // REPORTS
   REPORT: {
     CREATE: 'REPORT:CREATE',
     EDIT: 'REPORT:EDIT',
@@ -69,7 +65,7 @@ export const PERMISSIONS = {
     SCHEDULE: 'REPORT:SCHEDULE',
   },
 
-  // Time Tracking
+  // TIME TRACKING
   TIME: {
     TRACK: 'TIME:TRACK',
     EDIT_OWN: 'TIME:EDIT_OWN',
@@ -77,6 +73,29 @@ export const PERMISSIONS = {
     APPROVE: 'TIME:APPROVE',
     VIEW_REPORTS: 'TIME:VIEW_REPORTS',
     EXPORT: 'TIME:EXPORT',
+  },
+
+  // CLIENTS
+  CLIENT: {
+    CREATE: 'CLIENT:CREATE',
+    EDIT: 'CLIENT:EDIT',
+    DELETE: 'CLIENT:DELETE',
+    VIEW: 'CLIENT:VIEW',
+  },
+
+  // CATEGORIES
+  CATEGORY: {
+    CREATE: 'CATEGORY:CREATE',
+    EDIT: 'CATEGORY:EDIT',
+    DELETE: 'CATEGORY:DELETE',
+    VIEW: 'CATEGORY:VIEW',
+  },
+
+  // CALENDAR
+  CALENDAR: {
+    CREATE: 'CALENDAR:CREATE',
+    EDIT_OWN: 'CALENDAR:EDIT_OWN',
+    EDIT_ALL: 'CALENDAR:EDIT_ALL',
   },
 } as const;
 

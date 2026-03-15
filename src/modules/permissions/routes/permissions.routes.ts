@@ -7,16 +7,14 @@ import { PermissionsController } from '../controllers/permissions.controller';
 const router = Router();
 const permissionsController = new PermissionsController();
 
-// All routes require authentication and platform admin
 router.use(authMiddleware);
 router.use(requirePlatformAdmin);
 
-// CRUD operations
-router.post('/', asyncHandler(permissionsController.create));
+router.post('/', (_req, res) => res.status(403).json({ success: false, message: 'Permissions are managed via seed and cannot be created via API' }));
 router.get('/', asyncHandler(permissionsController.list));
-router.get('/all', asyncHandler(permissionsController.getAll)); // No pagination
+router.get('/all', asyncHandler(permissionsController.getAll));
 router.get('/:id', asyncHandler(permissionsController.getById));
 router.patch('/:id', asyncHandler(permissionsController.update));
-router.delete('/:id', asyncHandler(permissionsController.delete));
+router.delete('/:id', (_req, res) => res.status(403).json({ success: false, message: 'Permissions are managed via seed and cannot be deleted via API' }));
 
 export default router;

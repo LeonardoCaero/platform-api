@@ -6,7 +6,7 @@ import { t } from '@/modules/push-subscriptions/push.i18n';
 import type { CreateTimeEntryDto, UpdateTimeEntryDto, ListTimeEntriesQuery } from '../schemas/time-entries.schema';
 import { MembershipStatus, Prisma } from '@prisma/client';
 import { ClientsService } from '@/modules/clients/services/clients.service';
-import { isOwnerOrAdmin } from '@/common/utils/membership.util';
+import { assertCompanyPermission, hasCompanyPermission } from '@/common/utils/membership.util';
 
 const clientsService = new ClientsService();
 
@@ -61,11 +61,8 @@ export class TimeEntriesService {
     let loggedByUserId: string | null = null;
 
     if (targetUserId && targetUserId !== callerId) {
-      // Only owner/admin can log for someone else
-      const canManage = await isOwnerOrAdmin(callerId, data.companyId, isPlatformAdmin);
-      if (!canManage) {
-        throw ApiError.forbidden('Only company owners or admins can log hours for other members');
-      }
+      // Only users with TIME:EDIT_ALL can log hours for someone else
+      await assertCompanyPermission(callerId, data.companyId, 'TIME:EDIT_ALL', isPlatformAdmin, 'You need TIME:EDIT_ALL permission to log hours for other members');
       // Verify target is an active member
       const targetMembership = await prisma.membership.findFirst({
         where: { userId: targetUserId, companyId: data.companyId, status: MembershipStatus.ACTIVE },
@@ -165,8 +162,8 @@ export class TimeEntriesService {
           throw ApiError.forbidden('You do not have access to this company');
         }
         where.companyId = companyId;
-        // Only owners/admins can see all entries in the company; regular members see only their own
-        const canViewAll = await isOwnerOrAdmin(userId, companyId, false);
+        // Only users with TIME:VIEW_REPORTS can see all entries; regular members see only their own
+        const canViewAll = await hasCompanyPermission(userId, companyId, 'TIME:VIEW_REPORTS', false);
         if (canViewAll) {
           if (filterUserId) where.userId = filterUserId;
         } else {
@@ -232,8 +229,8 @@ export class TimeEntriesService {
     const timeEntry = await this.getById(id, userId, isPlatformAdmin);
 
     if (!isPlatformAdmin && timeEntry.userId !== userId) {
-      // Allow owner/admin to edit any entry in their company
-      const canManage = await isOwnerOrAdmin(userId, timeEntry.companyId, isPlatformAdmin);
+      // Allow users with TIME:EDIT_ALL to edit any entry in their company
+      const canManage = await hasCompanyPermission(userId, timeEntry.companyId, 'TIME:EDIT_ALL', isPlatformAdmin);
       if (!canManage) throw ApiError.forbidden('You can only edit your own time entries');
     }
 
@@ -288,7 +285,7 @@ export class TimeEntriesService {
     const timeEntry = await this.getById(id, userId, isPlatformAdmin);
 
     if (!isPlatformAdmin && timeEntry.userId !== userId) {
-      const canManage = await isOwnerOrAdmin(userId, timeEntry.companyId, isPlatformAdmin);
+      const canManage = await hasCompanyPermission(userId, timeEntry.companyId, 'TIME:EDIT_ALL', isPlatformAdmin);
       if (!canManage) throw ApiError.forbidden('You do not have permission to delete this entry');
     }
 

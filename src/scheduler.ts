@@ -62,7 +62,7 @@ async function cleanupExpiredTokens() {
     }),
     prisma.companyMemberInvite.deleteMany({
       where: {
-        status: { in: ['EXPIRED', 'ACCEPTED', 'DECLINED'] },
+        status: { in: ['USED', 'EXPIRED', 'REVOKED'] },
         updatedAt: { lt: thirtyDaysAgo },
       },
     }),

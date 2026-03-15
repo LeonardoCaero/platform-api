@@ -52,3 +52,44 @@ export async function isOwnerOrAdmin(
   });
   return !!membership;
 }
+
+/**
+ * Throws 403 if the user does not have the given company-scoped permission.
+ * Platform admins always pass.
+ */
+export async function assertCompanyPermission(
+  userId: string,
+  companyId: string,
+  permissionKey: string,
+  isPlatformAdmin: boolean,
+  message = `Missing required permission: ${permissionKey}`,
+): Promise<void> {
+  if (isPlatformAdmin) return;
+  const match = await prisma.membershipRole.findFirst({
+    where: {
+      membership: { userId, companyId, status: MembershipStatus.ACTIVE },
+      role: { permissions: { some: { permission: { key: permissionKey } } } },
+    },
+  });
+  if (!match) throw ApiError.forbidden(message);
+}
+
+/**
+ * Returns true if the user has the given company-scoped permission.
+ * Platform admins always return true.
+ */
+export async function hasCompanyPermission(
+  userId: string,
+  companyId: string,
+  permissionKey: string,
+  isPlatformAdmin: boolean,
+): Promise<boolean> {
+  if (isPlatformAdmin) return true;
+  const match = await prisma.membershipRole.findFirst({
+    where: {
+      membership: { userId, companyId, status: MembershipStatus.ACTIVE },
+      role: { permissions: { some: { permission: { key: permissionKey } } } },
+    },
+  });
+  return !!match;
+}
