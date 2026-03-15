@@ -1,7 +1,7 @@
 import webpush from 'web-push';
 import { prisma } from '@/db/prisma';
 import { env } from '@/config/env';
-import { sseManager } from '@/common/services/sse.manager';
+import { logger } from '@/common/logger/logger';
 import type { PushPayload } from '../push.i18n';
 
 const vapidPublicKey = env.VAPID_PUBLIC_KEY;
@@ -53,9 +53,6 @@ export class PushSubscriptionsService {
   async sendToUser(userId: string, buildPayload: (lang: string) => PushPayload): Promise<void> {
     if (!vapidPublicKey || !vapidPrivateKey) return;
 
-    // Skip push if the user already has the app open (they'll see the SSE toast instead)
-    if (sseManager.isConnected(userId)) return;
-
     const subscriptions = await prisma.pushSubscription.findMany({
       where: { userId },
       select: { id: true, endpoint: true, p256dh: true, auth: true, lang: true },
@@ -72,6 +69,8 @@ export class PushSubscriptionsService {
         .catch(async (err: any) => {
           if (err.statusCode === 410) {
             await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+          } else {
+            logger.error(`[Push] Failed to send to subscription ${sub.id} (status ${err.statusCode ?? 'unknown'}): ${err.message}`);
           }
         });
     });
