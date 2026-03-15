@@ -331,7 +331,7 @@ model MembershipRole {
 model RefreshToken {
   id        String @id @default(uuid()) @db.Uuid
   userId    String @db.Uuid
-  tokenHash String @db.VarChar(255)
+  tokenHash String @unique @db.VarChar(255)
 
   revokedAt DateTime?
   expiresAt DateTime

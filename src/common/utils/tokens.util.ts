@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import bcrypt from 'bcryptjs';
 import { prisma } from '@/db/prisma';
 import { env } from '@/config/env';
 
@@ -13,9 +12,26 @@ function expiryMs(duration: string): number {
   throw new Error(`Unsupported duration suffix in '${duration}'. Use d/h/m/s.`);
 }
 
+// Refresh tokens are high-entropy random values (256-bit), so SHA-256 is
+// sufficient — no need for bcrypt's password-hardening properties.
+function hashToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
 export const generateRefreshToken = async (userId: string): Promise<string> => {
   const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = await bcrypt.hash(token, 10);
+  const tokenHash = hashToken(token);
+
+  // Clean up expired/revoked tokens to keep the table lean
+  await prisma.refreshToken.deleteMany({
+    where: {
+      userId,
+      OR: [
+        { expiresAt: { lt: new Date() } },
+        { revokedAt: { not: null } },
+      ],
+    },
+  });
 
   await prisma.refreshToken.create({
     data: {
@@ -32,35 +48,22 @@ export const verifyRefreshToken = async (
   token: string,
   userId: string
 ): Promise<boolean> => {
-  const tokens = await prisma.refreshToken.findMany({
+  const tokenHash = hashToken(token);
+  const dbToken = await prisma.refreshToken.findFirst({
     where: {
+      tokenHash,
       userId,
       expiresAt: { gte: new Date() },
       revokedAt: null,
     },
   });
-
-  for (const dbToken of tokens) {
-    const isValid = await bcrypt.compare(token, dbToken.tokenHash);
-    if (isValid) return true;
-  }
-
-  return false;
+  return !!dbToken;
 };
 
 export const revokeRefreshToken = async (token: string, userId: string) => {
-  const tokens = await prisma.refreshToken.findMany({
-    where: { userId, revokedAt: null },
+  const tokenHash = hashToken(token);
+  await prisma.refreshToken.updateMany({
+    where: { tokenHash, userId, revokedAt: null },
+    data: { revokedAt: new Date() },
   });
-
-  for (const dbToken of tokens) {
-    const isMatch = await bcrypt.compare(token, dbToken.tokenHash);
-    if (isMatch) {
-      await prisma.refreshToken.update({
-        where: { id: dbToken.id },
-        data: { revokedAt: new Date() },
-      });
-      return;
-    }
-  }
 };
