@@ -28,7 +28,7 @@ logs/
 *.log
 
 # User-uploaded files (served as static assets, stored in Docker volume)
-uploads/
+/uploads/
 *.gz
 *.out
 *.zip
