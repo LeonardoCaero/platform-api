@@ -37,6 +37,7 @@ function mapMembership(m: any) {
     status: m.status,
     position: m.position ?? undefined,
     department: m.department ?? undefined,
+    contractType: m.contractType,
     invitedAt: (m.invitedAt ?? m.createdAt).toISOString(),
     activatedAt: m.activatedAt?.toISOString() ?? null,
     expiresAt: m.expiresAt?.toISOString() ?? null,
@@ -91,6 +92,7 @@ export class MembershipsService {
     userId: string;
     position?: string;
     department?: string;
+    contractType?: 'EMPLOYEE' | 'FREELANCE' | 'INTERN' | 'CONTRACTOR' | 'OTHER';
   }) {
     const user = await prisma.user.findUnique({ where: { id: data.userId } });
     if (!user) throw ApiError.notFound('User not found');
@@ -100,7 +102,6 @@ export class MembershipsService {
     });
     if (existing) throw ApiError.conflict('User is already a member of this company');
 
-    // Auto-assign the default role of this company if one exists
     const defaultRole = await prisma.role.findFirst({
       where: { companyId, isDefault: true },
     });
@@ -112,6 +113,7 @@ export class MembershipsService {
         status: 'INVITED',
         position: data.position,
         department: data.department,
+        contractType: data.contractType ?? 'EMPLOYEE',
         invitedAt: new Date(),
         roles: defaultRole
           ? { create: [{ roleId: defaultRole.id }] }
@@ -123,7 +125,6 @@ export class MembershipsService {
       },
     });
 
-    // Push notifications to the invited user
     pushService.sendToUser(
       data.userId,
       lang => t(lang).memberInvited(membership.company.name),

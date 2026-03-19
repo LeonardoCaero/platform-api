@@ -6,9 +6,7 @@ datasource db {
   provider = "postgresql"
 }
 
-///////////////////////////
 // ENUMS
-///////////////////////////
 
 enum CompanyStatus {
   ACTIVE
@@ -53,6 +51,12 @@ enum PermissionRequestStatus {
   CANCELLED
 }
 
+enum OvertimeTrigger {
+  WEEKEND
+  AFTER_HOURS
+  MANUAL
+}
+
 enum ContractType {
   EMPLOYEE
   FREELANCE
@@ -61,38 +65,22 @@ enum ContractType {
   OTHER
 }
 
-enum OvertimeTrigger {
-  WEEKEND
-  AFTER_HOURS
-  MANUAL
-}
-
-///////////////////////////
 // CORE
-///////////////////////////
 
-// Global user (can belong to many companies via Membership)
 model User {
-  id            String    @id @default(uuid()) @db.Uuid
-  email         String    @unique @db.VarChar(320)
-  fullName      String    @db.VarChar(255)
-  phone         String?   @db.VarChar(20)
-  passwordHash  String    @db.VarChar(255)
-  avatar        String?   @db.VarChar(500)
-  
-  // Email verification
-  emailVerified   Boolean   @default(false)
-  emailVerifiedAt DateTime?
-  
-  // Activity tracking
+  id           String  @id @default(uuid()) @db.Uuid
+  email        String  @unique @db.VarChar(320)
+  fullName     String  @db.VarChar(255)
+  phone        String? @db.VarChar(20)
+  passwordHash String  @db.VarChar(255)
+  avatar       String? @db.VarChar(500)
+
   lastLoginAt DateTime?
 
-  // Global kill-switch (blocks all access)
   isDisabled Boolean   @default(false)
   disabledAt DateTime?
   disabledBy String?   @db.Uuid
 
-  // Audit
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   createdBy String?  @db.Uuid
@@ -102,59 +90,35 @@ model User {
   refreshTokens RefreshToken[]
   platformAdmin PlatformAdmin?
 
-  // Company creation invites (admin issues / user uses)
-  issuedCompanyInvites CompanyInvite[] @relation("InviteIssuedByAdmin")
-  usedCompanyInvites   CompanyInvite[] @relation("InviteUsedByUser")
-
-  // Company member invites (issuer can be admin or authorized member)
   issuedMemberInvites CompanyMemberInvite[] @relation("MemberInviteIssuedByUser")
   usedMemberInvites   CompanyMemberInvite[] @relation("MemberInviteUsedByUser")
 
-  // Company creation requests
-  companyRequests CompanyRequest[]
+  companyRequests            CompanyRequest[]
+  reviewedCompanyRequests    CompanyRequest[]       @relation("CompanyRequestReviewer")
+  globalPermissions          UserGlobalPermission[]
+  permissionRequests         PermissionRequest[]
+  reviewedPermissionRequests PermissionRequest[]    @relation("PermissionRequestReviewer")
 
-  // Global permissions
-  globalPermissions UserGlobalPermission[]
-
-  // Reviews of company requests (as admin)
-  reviewedCompanyRequests CompanyRequest[] @relation("CompanyRequestReviewer")
-
-  // Permission requests
-  permissionRequests PermissionRequest[]
-
-  // Reviews of permission requests (as admin)
-  reviewedPermissionRequests PermissionRequest[] @relation("PermissionRequestReviewer")
-
-  // Time tracking
-  timeEntries TimeEntry[]
+  timeEntries       TimeEntry[]
   loggedTimeEntries TimeEntry[] @relation("TimeEntryLoggedBy")
 
-  // Calendar notes
-  createdCalendarNotes CalendarNote[]
+  createdCalendarNotes  CalendarNote[]
   calendarNoteAssignees CalendarNoteAssignee[]
-
-  // Reminder notifications
   reminderNotifications ReminderNotification[]
+  pushSubscriptions     PushSubscription[]
 
-  // Push subscriptions
-  pushSubscriptions PushSubscription[]
-
-  @@index([email, emailVerified])
+  @@index([email])
   @@index([isDisabled])
 }
 
-// Platform super admin flag
 model PlatformAdmin {
   userId    String   @id @db.Uuid
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
-///////////////////////////
 // TENANT
-///////////////////////////
 
-// Tenant (company)
 model Company {
   id          String        @id @default(uuid()) @db.Uuid
   name        String        @db.VarChar(255)
@@ -164,75 +128,47 @@ model Company {
   metadata    Json?         @default("{}")
   status      CompanyStatus @default(ACTIVE)
 
-  // Soft delete (archive)
   deletedAt DateTime?
 
-  // Audit
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   createdBy String?  @db.Uuid
   updatedBy String?  @db.Uuid
 
-  memberships Membership[]
-  roles       Role[]
-
-  // Invites to join this company
+  memberships   Membership[]
+  roles         Role[]
   memberInvites CompanyMemberInvite[]
 
-  // Optional: company created from a single-use CompanyInvite (1:1)
-  createdFromInvite CompanyInvite? @relation("InviteCreatedCompany")
-
-  // Company created from an approved request
   createdFromRequest CompanyRequest? @relation("RequestCreatedCompany")
 
-  // Time tracking
-  projects    Project[]
-  timeEntries TimeEntry[]
-
-  // Clients
-  clients Client[]
-
-  // Time entry categories
+  projects            Project[]
+  timeEntries         TimeEntry[]
+  clients             Client[]
   timeEntryCategories TimeEntryCategory[]
-
-  // Calendar notes
-  calendarNotes CalendarNote[]
+  calendarNotes       CalendarNote[]
 
   @@index([name])
   @@index([status])
   @@index([deletedAt])
 }
 
-// User <-> Company link (status, roles, hierarchy)
 model Membership {
-  id        String           @id @default(uuid()) @db.Uuid
-  companyId String           @db.Uuid
-  userId    String           @db.Uuid
-  status    MembershipStatus @default(INVITED)
-  metadata  Json?            @default("{}")
-  position   String? @db.VarChar(100)
-  department String? @db.VarChar(100)
+  id           String           @id @default(uuid()) @db.Uuid
+  companyId    String           @db.Uuid
+  userId       String           @db.Uuid
+  status       MembershipStatus @default(INVITED)
+  position     String?          @db.VarChar(100)
+  department   String?          @db.VarChar(100)
+  contractType ContractType     @default(EMPLOYEE)
 
-  // Contract info
-  contractType ContractType @default(EMPLOYEE)
-  hourlyRate   Decimal?     @db.Decimal(10,2)
-
-  // Invite lifecycle within a company
   invitedAt   DateTime?
   activatedAt DateTime?
   expiresAt   DateTime?
 
-  // Supervisor chain inside the company
-  supervisorMembershipId String?      @db.Uuid
-  supervisor             Membership?  @relation("MembershipSupervisor", fields: [supervisorMembershipId], references: [id], onDelete: SetNull)
-  subordinates           Membership[] @relation("MembershipSupervisor")
+  company Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  roles   MembershipRole[]
 
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  roles MembershipRole[]
-
-  // Audit
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   createdBy String?  @db.Uuid
@@ -245,32 +181,23 @@ model Membership {
   @@index([expiresAt])
 }
 
-///////////////////////////
 // RBAC
-///////////////////////////
 
-// Role per company (tenant-scoped)
 model Role {
   id          String  @id @default(uuid()) @db.Uuid
   companyId   String  @db.Uuid
   name        String  @db.VarChar(80)
   description String? @db.VarChar(255)
-  color       String? @db.VarChar(7) @default("#6366F1")
-  
-  // Protect core roles (e.g. Owner/Member) from deletion in your app logic
-  isSystem Boolean @default(false)
-
-  // Default role assigned when a member invite is accepted (1 per company by app rule)
-  isDefault Boolean @default(false)
+  color       String? @default("#6366F1") @db.VarChar(7)
+  isSystem    Boolean @default(false)
+  isDefault   Boolean @default(false)
 
   company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   permissions RolePermission[]
   members     MembershipRole[]
 
-  // Inverse relation for CompanyMemberInvite.defaultRole
   memberInvitesAsDefaultRole CompanyMemberInvite[] @relation("MemberInviteDefaultRole")
 
-  // Audit
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   createdBy String?  @db.Uuid
@@ -282,52 +209,42 @@ model Role {
   @@index([isDefault])
 }
 
-// Global permission catalog (shared across companies)
 model Permission {
   id          String          @id @default(uuid()) @db.Uuid
   key         String          @unique @db.VarChar(120)
   description String?         @db.VarChar(255)
   scope       PermissionScope @default(COMPANY)
 
-  roles             RolePermission[]
+  roles                 RolePermission[]
   userGlobalPermissions UserGlobalPermission[]
-  permissionRequests PermissionRequest[] @relation("RequestedPermission")
+  permissionRequests    PermissionRequest[]    @relation("RequestedPermission")
 }
 
-// Role <-> Permission
 model RolePermission {
   roleId       String @db.Uuid
   permissionId String @db.Uuid
 
-  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  // Prevent deleting a Permission that is still in use
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
   permission Permission @relation(fields: [permissionId], references: [id], onDelete: Restrict)
 
   @@id([roleId, permissionId])
   @@index([permissionId])
 }
 
-// Membership <-> Role
 model MembershipRole {
   membershipId String @db.Uuid
   roleId       String @db.Uuid
 
   membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-
-  // Prevent deleting a Role that is assigned to members
-  role Role @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Restrict)
 
   @@id([membershipId, roleId])
   @@index([roleId])
   @@index([membershipId])
 }
 
-///////////////////////////
 // AUTH
-///////////////////////////
 
-// Refresh tokens (hash only)
 model RefreshToken {
   id        String @id @default(uuid()) @db.Uuid
   userId    String @db.Uuid
@@ -345,48 +262,15 @@ model RefreshToken {
   @@index([revokedAt])
 }
 
-///////////////////////////
-// ONBOARDING INVITES
-///////////////////////////
+// INVITES
 
-// Single-use invite to create a company (platform admin only)
-model CompanyInvite {
-  id        String       @id @default(uuid()) @db.Uuid
-  email     String       @db.VarChar(320)
-  tokenHash String       @unique @db.VarChar(255)
-  status    InviteStatus @default(PENDING)
-
-  issuedByAdminId String @db.Uuid
-  issuedByAdmin   User   @relation("InviteIssuedByAdmin", fields: [issuedByAdminId], references: [id], onDelete: Restrict)
-
-  usedByUserId String? @db.Uuid
-  usedByUser   User?   @relation("InviteUsedByUser", fields: [usedByUserId], references: [id], onDelete: SetNull)
-
-  // Created company (1:1)
-  createdCompanyId String?  @unique @db.Uuid
-  createdCompany   Company? @relation("InviteCreatedCompany", fields: [createdCompanyId], references: [id], onDelete: SetNull)
-
-  expiresAt DateTime
-  usedAt    DateTime?
-  revokedAt DateTime?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([email])
-  @@index([expiresAt])
-  @@index([status])
-  @@index([issuedByAdminId])
-}
-
-// Invite to join an existing company (platform admin or authorized member)
 model CompanyMemberInvite {
-  id        String       @id @default(uuid()) @db.Uuid
-  companyId String       @db.Uuid
-  email     String       @db.VarChar(320)
-  tokenHash String       @unique @db.VarChar(255)
-  status    InviteStatus @default(PENDING)
-  inviteMessage String? @db.Text
+  id            String       @id @default(uuid()) @db.Uuid
+  companyId     String       @db.Uuid
+  email         String       @db.VarChar(320)
+  tokenHash     String       @unique @db.VarChar(255)
+  status        InviteStatus @default(PENDING)
+  inviteMessage String?      @db.Text
 
   issuedByUserId String @db.Uuid
   issuedByUser   User   @relation("MemberInviteIssuedByUser", fields: [issuedByUserId], references: [id], onDelete: Restrict)
@@ -396,7 +280,6 @@ model CompanyMemberInvite {
 
   company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
-  // Optional: role to assign on accept (fallback to company default role in app logic)
   defaultRoleId String? @db.Uuid
   defaultRole   Role?   @relation("MemberInviteDefaultRole", fields: [defaultRoleId], references: [id], onDelete: SetNull)
 
@@ -407,20 +290,17 @@ model CompanyMemberInvite {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@unique([companyId, email, status], name: "unique_pending_invite")
   @@index([companyId])
   @@index([email])
   @@index([expiresAt])
   @@index([status])
   @@index([issuedByUserId])
   @@index([companyId, status])
-  @@unique([companyId, email, status], name: "unique_pending_invite")
 }
 
-///////////////////////////
 // USER GLOBAL PERMISSIONS
-///////////////////////////
 
-// User <-> Global Permission (platform-level permissions)
 model UserGlobalPermission {
   userId       String @db.Uuid
   permissionId String @db.Uuid
@@ -436,11 +316,8 @@ model UserGlobalPermission {
   @@index([permissionId])
 }
 
-///////////////////////////
 // COMPANY REQUESTS
-///////////////////////////
 
-// Request to create a company (user-initiated, admin-approved)
 model CompanyRequest {
   id          String               @id @default(uuid()) @db.Uuid
   userId      String               @db.Uuid
@@ -450,12 +327,10 @@ model CompanyRequest {
   reason      String?              @db.Text
   status      CompanyRequestStatus @default(PENDING)
 
-  // Admin review
-  reviewedBy   String?   @db.Uuid
-  reviewedAt   DateTime?
-  reviewNotes  String?   @db.Text
+  reviewedBy  String?   @db.Uuid
+  reviewedAt  DateTime?
+  reviewNotes String?   @db.Text
 
-  // Created company link
   createdCompanyId String?  @unique @db.Uuid
   createdCompany   Company? @relation("RequestCreatedCompany", fields: [createdCompanyId], references: [id], onDelete: SetNull)
 
@@ -471,25 +346,19 @@ model CompanyRequest {
   @@index([createdAt])
 }
 
-///////////////////////////
 // PERMISSION REQUESTS
-///////////////////////////
 
-// Request for global permissions (user-initiated, admin-approved)
 model PermissionRequest {
-  id          String                   @id @default(uuid()) @db.Uuid
-  userId      String                   @db.Uuid
-  type        PermissionRequestType    @default(GLOBAL_PERMISSION)
-  status      PermissionRequestStatus  @default(PENDING)
+  id     String                  @id @default(uuid()) @db.Uuid
+  userId String                  @db.Uuid
+  type   PermissionRequestType   @default(GLOBAL_PERMISSION)
+  status PermissionRequestStatus @default(PENDING)
 
-  // Requested permission (if type is GLOBAL_PERMISSION)
   requestedPermissionId String?     @db.Uuid
   requestedPermission   Permission? @relation("RequestedPermission", fields: [requestedPermissionId], references: [id], onDelete: SetNull)
 
-  // User justification
   reason String? @db.Text
 
-  // Admin review
   reviewedBy  String?   @db.Uuid
   reviewedAt  DateTime?
   reviewNotes String?   @db.Text
@@ -507,69 +376,60 @@ model PermissionRequest {
   @@index([type])
 }
 
-///////////////////////////
 // TIME TRACKING
-///////////////////////////
 
-// Projects for time categorization (optional)
 model Project {
-  id          String   @id @default(uuid()) @db.Uuid
-  companyId   String   @db.Uuid
-  name        String   @db.VarChar(150)
-  description String?  @db.Text
-  color       String?  @db.VarChar(7) @default("#10B981")
-  isActive    Boolean  @default(true)
+  id          String  @id @default(uuid()) @db.Uuid
+  companyId   String  @db.Uuid
+  name        String  @db.VarChar(150)
+  description String? @db.Text
+  color       String? @default("#10B981") @db.VarChar(7)
+  isActive    Boolean @default(true)
 
   company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   timeEntries TimeEntry[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String?  @db.Uuid
-  updatedBy   String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
 
   @@index([companyId, isActive])
 }
 
-// Daily time entries
 model TimeEntry {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @db.Uuid
-  companyId    String   @db.Uuid
-  projectId    String?  @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @db.Uuid
+  companyId String  @db.Uuid
+  projectId String? @db.Uuid
 
-  date         DateTime @db.Date
-  hours        Decimal  @db.Decimal(5,2)
-  startTime    String?  @db.VarChar(5)
-  endTime      String?  @db.VarChar(5)
+  date      DateTime @db.Date
+  hours     Decimal  @db.Decimal(5, 2)
+  startTime String?  @db.VarChar(5)
+  endTime   String?  @db.VarChar(5)
 
-  title        String   @db.VarChar(200)
-  description  String?  @db.Text
+  title       String  @db.VarChar(200)
+  description String? @db.Text
 
-  // Overtime
-  isOvertime          Boolean  @default(false)
-  appliedRatePerHour  Decimal? @db.Decimal(10,2)
+  isOvertime         Boolean  @default(false)
+  appliedRatePerHour Decimal? @db.Decimal(10, 2)
 
-  // Client & site link
-  clientId     String?  @db.Uuid
-  clientSiteId String?  @db.Uuid
+  clientId     String? @db.Uuid
+  clientSiteId String? @db.Uuid
+  categoryId   String? @db.Uuid
 
-  // Category (training, travel, normal work...)
-  categoryId   String?  @db.Uuid
-
-  // Who physically logged the entry (when a manager logs for someone else)
   loggedByUserId String? @db.Uuid
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  project      Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  client       Client?  @relation(fields: [clientId], references: [id], onDelete: SetNull)
-  clientSite   ClientSite? @relation(fields: [clientSiteId], references: [id], onDelete: SetNull)
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company      Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  project      Project?           @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  client       Client?            @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  clientSite   ClientSite?        @relation(fields: [clientSiteId], references: [id], onDelete: SetNull)
   category     TimeEntryCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  loggedByUser User?    @relation("TimeEntryLoggedBy", fields: [loggedByUserId], references: [id], onDelete: SetNull)
+  loggedByUser User?              @relation("TimeEntryLoggedBy", fields: [loggedByUserId], references: [id], onDelete: SetNull)
 
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([companyId, date])
   @@index([userId, date])
@@ -579,45 +439,43 @@ model TimeEntry {
   @@index([loggedByUserId])
 }
 
-///////////////////////////
 // CLIENTS
-///////////////////////////
 
 model Client {
-  id          String   @id @default(uuid()) @db.Uuid
-  companyId   String   @db.Uuid
-  name        String   @db.VarChar(255)
-  taxId       String?  @db.VarChar(50)
-  email       String?  @db.VarChar(320)
-  phone       String?  @db.VarChar(20)
-  address     String?  @db.Text
-  notes       String?  @db.Text
-  isActive    Boolean  @default(true)
-  isDefault   Boolean  @default(false)
+  id        String  @id @default(uuid()) @db.Uuid
+  companyId String  @db.Uuid
+  name      String  @db.VarChar(255)
+  taxId     String? @db.VarChar(50)
+  email     String? @db.VarChar(320)
+  phone     String? @db.VarChar(20)
+  address   String? @db.Text
+  notes     String? @db.Text
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
 
-  company     Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   sites       ClientSite[]
   rateRules   ClientRateRule[]
   timeEntries TimeEntry[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String?  @db.Uuid
-  updatedBy   String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
+  updatedBy String?  @db.Uuid
 
   @@index([companyId, isActive])
   @@index([companyId])
 }
 
 model ClientSite {
-  id        String   @id @default(uuid()) @db.Uuid
-  clientId  String   @db.Uuid
-  name      String   @db.VarChar(255)
-  address   String?  @db.Text
-  city      String?  @db.VarChar(100)
-  notes     String?  @db.Text
-  isActive  Boolean  @default(true)
-  isDefault Boolean  @default(false)
+  id        String  @id @default(uuid()) @db.Uuid
+  clientId  String  @db.Uuid
+  name      String  @db.VarChar(255)
+  address   String? @db.Text
+  city      String? @db.VarChar(100)
+  notes     String? @db.Text
+  isActive  Boolean @default(true)
+  isDefault Boolean @default(false)
 
   client      Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   timeEntries TimeEntry[]
@@ -629,28 +487,24 @@ model ClientSite {
 }
 
 model ClientRateRule {
-  id                  String   @id @default(uuid()) @db.Uuid
-  clientId            String   @db.Uuid
-  name                String   @db.VarChar(100)
+  id       String @id @default(uuid()) @db.Uuid
+  clientId String @db.Uuid
+  name     String @db.VarChar(100)
 
-  // Optional fallback base rate (used when no resources are defined)
-  baseRatePerHour     Decimal? @db.Decimal(10,2)
-  overtimeRatePerHour Decimal  @db.Decimal(10,2)
+  baseRatePerHour     Decimal? @db.Decimal(10, 2)
+  overtimeRatePerHour Decimal  @db.Decimal(10, 2)
   currency            String   @default("EUR") @db.VarChar(3)
 
-  // How overtime is determined
-  overtimeTriggers    OvertimeTrigger[]
+  overtimeTriggers OvertimeTrigger[]
 
-  // For AFTER_HOURS trigger: normal workday window
-  workdayStartTime    String?  @db.VarChar(5)
-  workdayEndTime      String?  @db.VarChar(5)
+  workdayStartTime String? @db.VarChar(5)
+  workdayEndTime   String? @db.VarChar(5)
 
-  // 0=Sun, 1=Mon … 6=Sat  (default Mon-Fri)
-  workdays            Int[]    @default([1,2,3,4,5])
+  workdays Int[] @default([1, 2, 3, 4, 5])
 
-  isActive            Boolean  @default(true)
-  effectiveFrom       DateTime @db.Date
-  effectiveTo         DateTime? @db.Date
+  isActive      Boolean   @default(true)
+  effectiveFrom DateTime  @db.Date
+  effectiveTo   DateTime? @db.Date
 
   client    Client                   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   resources ClientRateRuleResource[]
@@ -664,13 +518,13 @@ model ClientRateRule {
 }
 
 model ClientRateRuleResource {
-  id              String         @id @default(uuid()) @db.Uuid
-  rateRuleId      String         @db.Uuid
-  name            String         @db.VarChar(100)
-  baseRatePerHour Decimal        @db.Decimal(10,2)
-  isActive        Boolean        @default(true)
+  id              String  @id @default(uuid()) @db.Uuid
+  rateRuleId      String  @db.Uuid
+  name            String  @db.VarChar(100)
+  baseRatePerHour Decimal @db.Decimal(10, 2)
+  isActive        Boolean @default(true)
 
-  rateRule  ClientRateRule @relation(fields: [rateRuleId], references: [id], onDelete: Cascade)
+  rateRule ClientRateRule @relation(fields: [rateRuleId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -678,49 +532,44 @@ model ClientRateRuleResource {
   @@index([rateRuleId])
 }
 
-///////////////////////////
 // TIME ENTRY CATEGORIES
-///////////////////////////
 
 model TimeEntryCategory {
-  id          String   @id @default(uuid()) @db.Uuid
-  companyId   String   @db.Uuid
-  name        String   @db.VarChar(100)
-  color       String?  @db.VarChar(7) @default("#6366F1")
-  isDefault   Boolean  @default(false)
-  isActive    Boolean  @default(true)
+  id        String  @id @default(uuid()) @db.Uuid
+  companyId String  @db.Uuid
+  name      String  @db.VarChar(100)
+  color     String? @default("#6366F1") @db.VarChar(7)
+  isDefault Boolean @default(false)
+  isActive  Boolean @default(true)
 
   company     Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
   timeEntries TimeEntry[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  createdBy   String?  @db.Uuid
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  createdBy String?  @db.Uuid
 
-  @@index([companyId, isActive])
   @@unique([companyId, name])
+  @@index([companyId, isActive])
 }
 
-///////////////////////////
 // CALENDAR NOTES
-///////////////////////////
 
 model CalendarNote {
-  id            String   @id @default(uuid()) @db.Uuid
-  companyId     String   @db.Uuid
-  date          DateTime @db.Date
-  title         String   @db.VarChar(200)
-  content       String?  @db.Text
-  color         String?  @db.VarChar(7) @default("#6366F1")
-  isPrivate     Boolean  @default(false)
-  createdByUserId String @db.Uuid
+  id              String   @id @default(uuid()) @db.Uuid
+  companyId       String   @db.Uuid
+  date            DateTime @db.Date
+  title           String   @db.VarChar(200)
+  content         String?  @db.Text
+  color           String?  @default("#6366F1") @db.VarChar(7)
+  isPrivate       Boolean  @default(false)
+  createdByUserId String   @db.Uuid
 
-  // Days before the note date to send a push reminder (e.g. [1, 3, 7])
-  reminderDaysBefore  Int[]    @default([])
+  reminderDaysBefore Int[] @default([])
 
-  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  createdBy   User     @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
-  assignees   CalendarNoteAssignee[]
+  company               Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  createdBy             User                   @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  assignees             CalendarNoteAssignee[]
   reminderNotifications ReminderNotification[]
 
   createdAt DateTime @default(now())
@@ -730,12 +579,11 @@ model CalendarNote {
   @@index([createdByUserId])
 }
 
-// Tracks scheduled per-user push notifications derived from CalendarNote.reminderDaysBefore
 model ReminderNotification {
-  id             String   @id @default(uuid()) @db.Uuid
-  calendarNoteId String   @db.Uuid
-  userId         String   @db.Uuid
-  scheduledFor   DateTime @db.Date
+  id             String    @id @default(uuid()) @db.Uuid
+  calendarNoteId String    @db.Uuid
+  userId         String    @db.Uuid
+  scheduledFor   DateTime  @db.Date
   daysBeforeDue  Int
   sentAt         DateTime?
   dismissedAt    DateTime?
@@ -743,7 +591,7 @@ model ReminderNotification {
   calendarNote CalendarNote @relation(fields: [calendarNoteId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt   DateTime  @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([calendarNoteId, userId, daysBeforeDue])
   @@index([scheduledFor, sentAt])
@@ -762,17 +610,15 @@ model CalendarNoteAssignee {
   @@index([userId])
 }
 
-///////////////////////////
 // PUSH NOTIFICATIONS
-///////////////////////////
 
 model PushSubscription {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @db.Uuid
-  endpoint  String   @unique @db.Text
-  p256dh    String   @db.Text
-  auth      String   @db.Text
-  lang      String   @default("en") @db.VarChar(10)
+  id       String @id @default(uuid()) @db.Uuid
+  userId   String @db.Uuid
+  endpoint String @unique @db.Text
+  p256dh   String @db.Text
+  auth     String @db.Text
+  lang     String @default("en") @db.VarChar(10)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

@@ -64,7 +64,6 @@ export class UsersService {
           fullName: true,
           phone: true,
           avatar: true,
-          emailVerified: true,
           lastLoginAt: true,
           isDisabled: true,
           createdAt: true,
@@ -99,8 +98,6 @@ export class UsersService {
         fullName: true,
         phone: true,
         avatar: true,
-        emailVerified: true,
-        emailVerifiedAt: true,
         lastLoginAt: true,
         isDisabled: true,
         disabledAt: true,
@@ -120,7 +117,6 @@ export class UsersService {
    * Update user profile
    */
   async update(userId: string, currentUserId: string, data: UpdateUserDto) {
-    // Users can only update their own profile (or admin can update any - implement later)
     if (userId !== currentUserId) {
       throw ApiError.forbidden('You can only update your own profile');
     }
@@ -145,7 +141,6 @@ export class UsersService {
         fullName: true,
         phone: true,
         avatar: true,
-        emailVerified: true,
         lastLoginAt: true,
         createdAt: true,
         updatedAt: true,
@@ -224,7 +219,6 @@ export class UsersService {
       },
     });
 
-    // Revoke all refresh tokens
     await prisma.refreshToken.updateMany({
       where: { userId },
       data: { revokedAt: new Date() },

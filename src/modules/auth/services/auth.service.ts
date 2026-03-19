@@ -34,7 +34,6 @@ export class AuthService {
         fullName: true,
         phone: true,
         avatar: true,
-        emailVerified: true,
         createdAt: true,
       },
     });
@@ -90,7 +89,6 @@ export class AuthService {
         fullName: user.fullName,
         phone: user.phone,
         avatar: user.avatar,
-        emailVerified: user.emailVerified,
       },
       accessToken,
       refreshToken,
@@ -141,7 +139,6 @@ export class AuthService {
           fullName: true,
           phone: true,
           avatar: true,
-          emailVerified: true,
           lastLoginAt: true,
           createdAt: true,
         },

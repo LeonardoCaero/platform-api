@@ -23,8 +23,6 @@ async function main() {
         email: adminEmail,
         fullName: adminFullName,
         passwordHash,
-        emailVerified: true,
-        emailVerifiedAt: new Date(),
         platformAdmin: {
           create: {},
         },

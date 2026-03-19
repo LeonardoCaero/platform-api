@@ -1,9 +1,11 @@
 import { z } from 'zod';
+import { ContractType } from '@prisma/client';
 
 export const inviteMemberSchema = z.object({
   userId: z.string().uuid(),
   position: z.string().max(100).optional(),
   department: z.string().max(100).optional(),
+  contractType: z.nativeEnum(ContractType).optional(),
 });
 
 export const updateRolesSchema = z.object({

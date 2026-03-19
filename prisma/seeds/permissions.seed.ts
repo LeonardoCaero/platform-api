@@ -7,7 +7,6 @@ const prisma = new PrismaClient({ adapter });
 
 /**
  * Seed base permissions
- * Run with: npx tsx prisma/seeds/permissions.seed.ts
  */
 
 const BASE_PERMISSIONS = [
