@@ -1,0 +1,24 @@
+meta {
+  name: Create Request
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/company-requests
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "companyName": "My New Company",
+    "companySlug": "my-new-company",
+    "description": "What the company does",
+    "reason": "Why I need this company"
+  }
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Update Resource
+  type: http
+  seq: 2
+}
+
+patch {
+  url: {{baseUrl}}/clients/resources/:resourceId
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Resource Name",
+    "baseRatePerHour": 70,
+    "isActive": true
+  }
+}

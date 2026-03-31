@@ -1,0 +1,15 @@
+meta {
+  name: Delete Note
+  type: http
+  seq: 7
+}
+
+delete {
+  url: {{baseUrl}}/calendar-notes/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

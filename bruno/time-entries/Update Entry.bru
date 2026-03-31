@@ -1,0 +1,27 @@
+meta {
+  name: Update Entry
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/time-entries/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "date": "2026-01-15",
+    "hours": 8,
+    "title": "Development work",
+    "startTime": "09:00",
+    "endTime": "17:00",
+    "description": "Updated description",
+    "isOvertime": false
+  }
+}

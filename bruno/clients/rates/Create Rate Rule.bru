@@ -1,0 +1,30 @@
+meta {
+  name: Create Rate Rule
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/clients/:clientId/rates
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Standard Rate",
+    "baseRatePerHour": 50,
+    "overtimeRatePerHour": 75,
+    "currency": "EUR",
+    "overtimeTriggers": [],
+    "workdayStartTime": "09:00",
+    "workdayEndTime": "17:00",
+    "workdays": [1, 2, 3, 4, 5],
+    "isActive": true,
+    "effectiveFrom": "2026-01-01"
+  }
+}

@@ -1,0 +1,22 @@
+meta {
+  name: My Requests
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/permission-requests
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+params:query {
+  page: 1
+  limit: 20
+  ~status: PENDING
+  ~type: GLOBAL_PERMISSION
+}

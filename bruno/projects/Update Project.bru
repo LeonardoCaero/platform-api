@@ -1,0 +1,24 @@
+meta {
+  name: Update Project
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/projects/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Project Name",
+    "description": "Updated description",
+    "color": "#6366F1",
+    "isActive": true
+  }
+}

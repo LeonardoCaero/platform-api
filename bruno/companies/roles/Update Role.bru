@@ -1,0 +1,22 @@
+meta {
+  name: Update Role
+  type: http
+  seq: 3
+}
+
+patch {
+  url: {{baseUrl}}/companies/{{companyId}}/roles/:roleId
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Role Name",
+    "color": "#10B981"
+  }
+}

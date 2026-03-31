@@ -1,0 +1,22 @@
+meta {
+  name: List Notes
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/calendar-notes?companyId={{companyId}}&startDate=2026-01-01&endDate=2026-01-31
+  body: none
+  auth: bearer
+}
+
+params:query {
+  companyId: {{companyId}}
+  startDate: 2026-01-01
+  endDate: 2026-01-31
+  ~userId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

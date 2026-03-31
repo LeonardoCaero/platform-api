@@ -1,0 +1,23 @@
+meta {
+  name: Create Role
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/companies/{{companyId}}/roles
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Supervisor",
+    "description": "Team supervisor",
+    "color": "#8B5CF6"
+  }
+}

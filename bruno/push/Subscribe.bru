@@ -1,0 +1,25 @@
+meta {
+  name: Subscribe
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/push/subscribe
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/...",
+    "keys": {
+      "p256dh": "base64-encoded-p256dh-key",
+      "auth": "base64-encoded-auth-key"
+    }
+  }
+}

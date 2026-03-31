@@ -1,0 +1,15 @@
+meta {
+  name: Cancel Request
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/company-requests/:id/cancel
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

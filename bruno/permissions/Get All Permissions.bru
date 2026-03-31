@@ -1,0 +1,15 @@
+meta {
+  name: Get All Permissions
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/permissions/all
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

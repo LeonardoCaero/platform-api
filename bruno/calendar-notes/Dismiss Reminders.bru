@@ -1,0 +1,21 @@
+meta {
+  name: Dismiss Reminders
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/calendar-notes/dismiss-reminders
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "noteIds": ["note-uuid-1", "note-uuid-2"]
+  }
+}

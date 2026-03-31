@@ -1,0 +1,15 @@
+meta {
+  name: Delete Rate Rule
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/clients/rates/:ruleId
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

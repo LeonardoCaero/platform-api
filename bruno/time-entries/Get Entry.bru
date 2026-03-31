@@ -1,0 +1,15 @@
+meta {
+  name: Get Entry
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/time-entries/:id
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

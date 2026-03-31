@@ -1,0 +1,27 @@
+meta {
+  name: Update Client
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/clients/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Client Name",
+    "taxId": "B12345678",
+    "email": "updated@example.com",
+    "phone": "+34 600 111 222",
+    "address": "456 New Street",
+    "notes": "Updated notes",
+    "isActive": true
+  }
+}

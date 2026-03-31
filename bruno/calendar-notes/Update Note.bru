@@ -1,0 +1,26 @@
+meta {
+  name: Update Note
+  type: http
+  seq: 6
+}
+
+patch {
+  url: {{baseUrl}}/calendar-notes/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "title": "Updated Note Title",
+    "content": "Updated content",
+    "color": "#EF4444",
+    "isPrivate": false,
+    "assigneeUserIds": [],
+    "reminderDaysBefore": [1]
+  }
+}

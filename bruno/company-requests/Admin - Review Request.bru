@@ -1,0 +1,22 @@
+meta {
+  name: Admin - Review Request
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/company-requests/admin/:id/review
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "action": "approve",
+    "reviewNotes": "Looks good, approved."
+  }
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Available Permissions
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/permission-requests/available-permissions
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

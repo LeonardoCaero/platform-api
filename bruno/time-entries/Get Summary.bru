@@ -1,0 +1,24 @@
+meta {
+  name: Get Summary
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/time-entries/summary?companyId={{companyId}}&startDate=2026-01-01&endDate=2026-03-31
+  body: none
+  auth: bearer
+}
+
+params:query {
+  companyId: {{companyId}}
+  startDate: 2026-01-01
+  endDate: 2026-03-31
+  ~userId: 
+  ~projectId: 
+  ~clientId: 
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

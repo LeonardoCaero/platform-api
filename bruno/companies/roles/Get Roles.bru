@@ -1,0 +1,15 @@
+meta {
+  name: Get Roles
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/companies/{{companyId}}/roles
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}

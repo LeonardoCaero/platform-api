@@ -1,0 +1,25 @@
+meta {
+  name: Create Site
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/clients/:clientId/sites
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Main Office",
+    "address": "123 Site Street",
+    "city": "Madrid",
+    "notes": "Primary work location",
+    "isActive": true
+  }
+}

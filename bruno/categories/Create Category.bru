@@ -1,0 +1,25 @@
+meta {
+  name: Create Category
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/time-entry-categories
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "companyId": "{{companyId}}",
+    "name": "New Category",
+    "color": "#6366F1",
+    "isDefault": false,
+    "isActive": true
+  }
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Create Client
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/clients
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "companyId": "{{companyId}}",
+    "name": "Client Name",
+    "taxId": "B12345678",
+    "email": "client@example.com",
+    "phone": "+34 600 000 000",
+    "address": "123 Main Street",
+    "notes": "Important client",
+    "isActive": true
+  }
+}

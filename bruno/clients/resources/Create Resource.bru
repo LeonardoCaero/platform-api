@@ -1,0 +1,23 @@
+meta {
+  name: Create Resource
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/clients/rates/:ruleId/resources
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Senior Developer",
+    "baseRatePerHour": 65,
+    "isActive": true
+  }
+}

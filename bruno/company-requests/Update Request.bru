@@ -1,0 +1,22 @@
+meta {
+  name: Update Request
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/company-requests/:id
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "companyName": "Updated Company Name",
+    "reason": "Updated reason"
+  }
+}

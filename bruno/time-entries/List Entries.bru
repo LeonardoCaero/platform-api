@@ -1,0 +1,27 @@
+meta {
+  name: List Entries
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/time-entries
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+params:query {
+  companyId: {{companyId}}
+  page: 1
+  limit: 20
+  ~startDate: 2026-01-01
+  ~endDate: 2026-01-31
+  ~userId: 
+  ~projectId: 
+  ~clientId: 
+  ~categoryId: 
+}

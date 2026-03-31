@@ -1,0 +1,24 @@
+meta {
+  name: Invite Member
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/companies/{{companyId}}/members/invite
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "userId": "user-uuid-here",
+    "position": "Developer",
+    "department": "Engineering",
+    "contractType": "EMPLOYEE"
+  }
+}

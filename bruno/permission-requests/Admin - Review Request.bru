@@ -1,0 +1,22 @@
+meta {
+  name: Admin - Review Request
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/permission-requests/admin/:id/review
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "action": "approve",
+    "reviewNotes": "Permission granted."
+  }
+}

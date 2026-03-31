@@ -1,0 +1,23 @@
+meta {
+  name: Create Request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/permission-requests
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "type": "GLOBAL_PERMISSION",
+    "requestedPermissionId": "permission-uuid-here",
+    "reason": "I need this permission to manage users"
+  }
+}

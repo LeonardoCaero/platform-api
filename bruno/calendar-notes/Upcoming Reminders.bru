@@ -1,0 +1,19 @@
+meta {
+  name: Upcoming Reminders
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/calendar-notes/upcoming-reminders
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+params:query {
+  companyId: {{companyId}}
+}

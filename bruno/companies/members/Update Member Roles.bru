@@ -1,0 +1,21 @@
+meta {
+  name: Update Member Roles
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/companies/{{companyId}}/members/:memberId/roles
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "roleIds": ["role-uuid-here"]
+  }
+}

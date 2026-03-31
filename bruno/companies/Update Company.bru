@@ -1,0 +1,22 @@
+meta {
+  name: Update Company
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/companies/{{companyId}}
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+body:json {
+  {
+    "name": "Updated Company Name",
+    "description": "Updated description"
+  }
+}

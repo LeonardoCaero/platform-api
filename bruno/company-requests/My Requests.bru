@@ -1,0 +1,21 @@
+meta {
+  name: My Requests
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/company-requests
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+params:query {
+  page: 1
+  limit: 10
+  ~status: PENDING
+}
