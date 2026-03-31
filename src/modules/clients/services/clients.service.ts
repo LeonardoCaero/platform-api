@@ -13,9 +13,10 @@ import type {
   UpdateClientRateRuleResourceDto,
 } from '../schemas/clients.schema';
 
-// Clients
-
 export class ClientsService {
+  // Clients
+
+  /** Create a new client under a company. */
   async create(data: CreateClientDto, userId: string, isPlatformAdmin: boolean) {
     await assertCompanyPermission(userId, data.companyId, 'CLIENT:CREATE', isPlatformAdmin);
 
@@ -25,6 +26,7 @@ export class ClientsService {
     });
   }
 
+  /** List clients for a company with pagination, search and active filter. */
   async list(query: ListClientsQuery, userId: string, isPlatformAdmin: boolean) {
     await assertMember(userId, query.companyId, isPlatformAdmin);
 
@@ -57,6 +59,7 @@ export class ClientsService {
     return { clients, pagination: { page, limit, total, totalPages: Math.ceil(total / limit) } };
   }
 
+  /** Get a client by ID and verify caller has membership in its company. */
   async getById(id: string, userId: string, isPlatformAdmin: boolean) {
     const client = await prisma.client.findUnique({
       where: { id },
@@ -74,6 +77,7 @@ export class ClientsService {
     return client;
   }
 
+  /** Update a client's details. */
   async update(id: string, data: UpdateClientDto, userId: string, isPlatformAdmin: boolean) {
     const client = await this.getById(id, userId, isPlatformAdmin);
     await assertCompanyPermission(userId, client.companyId, 'CLIENT:EDIT', isPlatformAdmin);
@@ -96,6 +100,7 @@ export class ClientsService {
     });
   }
 
+  /** Delete a client. */
   async delete(id: string, userId: string, isPlatformAdmin: boolean) {
     const client = await this.getById(id, userId, isPlatformAdmin);
     await assertCompanyPermission(userId, client.companyId, 'CLIENT:DELETE', isPlatformAdmin);
@@ -106,6 +111,7 @@ export class ClientsService {
 
   // Sites
 
+  /** Create a new site under a client. */
   async createSite(clientId: string, data: CreateClientSiteDto, userId: string, isPlatformAdmin: boolean) {
     const client = await this.getById(clientId, userId, isPlatformAdmin);
     await assertCompanyPermission(userId, client.companyId, 'CLIENT:EDIT', isPlatformAdmin);
@@ -113,6 +119,7 @@ export class ClientsService {
     return prisma.clientSite.create({ data: { ...data, clientId } });
   }
 
+  /** Update a site's details. */
   async updateSite(siteId: string, data: UpdateClientSiteDto, userId: string, isPlatformAdmin: boolean) {
     const site = await prisma.clientSite.findUnique({ where: { id: siteId }, include: { client: true } });
     if (!site) throw ApiError.notFound('Site not found');
@@ -128,6 +135,7 @@ export class ClientsService {
     return prisma.clientSite.update({ where: { id: siteId }, data });
   }
 
+  /** Delete a site. */
   async deleteSite(siteId: string, userId: string, isPlatformAdmin: boolean) {
     const site = await prisma.clientSite.findUnique({ where: { id: siteId }, include: { client: true } });
     if (!site) throw ApiError.notFound('Site not found');
@@ -139,6 +147,7 @@ export class ClientsService {
 
   // Rate Rules
 
+  /** Create a new rate rule under a client. */
   async createRateRule(clientId: string, data: CreateClientRateRuleDto, userId: string, isPlatformAdmin: boolean) {
     const client = await this.getById(clientId, userId, isPlatformAdmin);
     await assertCompanyPermission(userId, client.companyId, 'CLIENT:EDIT', isPlatformAdmin);
@@ -149,6 +158,7 @@ export class ClientsService {
     });
   }
 
+  /** Update a rate rule's details. */
   async updateRateRule(ruleId: string, data: UpdateClientRateRuleDto, userId: string, isPlatformAdmin: boolean) {
     const rule = await prisma.clientRateRule.findUnique({ where: { id: ruleId }, include: { client: true } });
     if (!rule) throw ApiError.notFound('Rate rule not found');
@@ -161,6 +171,7 @@ export class ClientsService {
     });
   }
 
+  /** Delete a rate rule. */
   async deleteRateRule(ruleId: string, userId: string, isPlatformAdmin: boolean) {
     const rule = await prisma.clientRateRule.findUnique({ where: { id: ruleId }, include: { client: true } });
     if (!rule) throw ApiError.notFound('Rate rule not found');
@@ -172,6 +183,7 @@ export class ClientsService {
 
   // Rate Rule Resources
 
+  /** Create a new resource under a rate rule. */
   async createResource(ruleId: string, data: CreateClientRateRuleResourceDto, userId: string, isPlatformAdmin: boolean) {
     const rule = await prisma.clientRateRule.findUnique({ where: { id: ruleId }, include: { client: true } });
     if (!rule) throw ApiError.notFound('Rate rule not found');
@@ -180,6 +192,7 @@ export class ClientsService {
     return prisma.clientRateRuleResource.create({ data: { ...data, rateRuleId: ruleId } });
   }
 
+  /** Update a rate rule resource's details. */
   async updateResource(resourceId: string, data: UpdateClientRateRuleResourceDto, userId: string, isPlatformAdmin: boolean) {
     const resource = await prisma.clientRateRuleResource.findUnique({
       where: { id: resourceId },
@@ -191,6 +204,7 @@ export class ClientsService {
     return prisma.clientRateRuleResource.update({ where: { id: resourceId }, data });
   }
 
+  /** Delete a rate rule resource. */
   async deleteResource(resourceId: string, userId: string, isPlatformAdmin: boolean) {
     const resource = await prisma.clientRateRuleResource.findUnique({
       where: { id: resourceId },

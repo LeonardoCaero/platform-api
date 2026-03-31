@@ -4,10 +4,10 @@ import { assertCompanyPermission, assertMember } from '@/common/utils/membership
 import type { CreateCategoryDto, UpdateCategoryDto, ListCategoriesQuery } from '../schemas/categories.schema';
 
 export class CategoriesService {
+  /** Create a new time-entry category. If default, unsets the current default first. */
   async create(data: CreateCategoryDto, userId: string, isPlatformAdmin: boolean) {
     await assertCompanyPermission(userId, data.companyId, 'CATEGORY:CREATE', isPlatformAdmin);
 
-    // If creating a default category, unset the current default first
     if (data.isDefault) {
       await prisma.timeEntryCategory.updateMany({
         where: { companyId: data.companyId, isDefault: true },
@@ -18,6 +18,7 @@ export class CategoriesService {
     return prisma.timeEntryCategory.create({ data: { ...data, createdBy: userId } });
   }
 
+  /** List all categories for a company, optionally filtered by active status. */
   async list(query: ListCategoriesQuery, userId: string, isPlatformAdmin: boolean) {
     await assertMember(userId, query.companyId, isPlatformAdmin);
 
@@ -30,6 +31,7 @@ export class CategoriesService {
     });
   }
 
+  /** Update a category's details. If setting as default, unsets the previous default first. */
   async update(id: string, data: UpdateCategoryDto, userId: string, isPlatformAdmin: boolean) {
     const category = await prisma.timeEntryCategory.findUnique({ where: { id } });
     if (!category) throw ApiError.notFound('Category not found');
@@ -45,6 +47,7 @@ export class CategoriesService {
     return prisma.timeEntryCategory.update({ where: { id }, data });
   }
 
+  /** Delete a category. */
   async delete(id: string, userId: string, isPlatformAdmin: boolean) {
     const category = await prisma.timeEntryCategory.findUnique({ where: { id } });
     if (!category) throw ApiError.notFound('Category not found');

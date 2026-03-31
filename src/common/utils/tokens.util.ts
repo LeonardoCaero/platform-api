@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import { prisma } from '@/db/prisma';
 import { env } from '@/config/env';
 
+/** Parse a duration string (e.g. "7d", "15m") into milliseconds. */
 function expiryMs(duration: string): number {
   const value = parseInt(duration, 10);
   if (isNaN(value)) throw new Error(`Invalid duration: '${duration}'`);
@@ -12,8 +13,11 @@ function expiryMs(duration: string): number {
   throw new Error(`Unsupported duration suffix in '${duration}'. Use d/h/m/s.`);
 }
 
-// Refresh tokens are high-entropy random values (256-bit), so SHA-256 is
-// sufficient — no need for bcrypt's password-hardening properties.
+/**
+ * Hash a refresh token with SHA-256.
+ * Refresh tokens are high-entropy random values (256-bit), so SHA-256 is
+ * sufficient — no need for bcrypt's password-hardening properties.
+ */
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex');
 }

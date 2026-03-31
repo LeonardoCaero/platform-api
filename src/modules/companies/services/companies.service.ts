@@ -286,8 +286,7 @@ export class CompaniesService {
   }
 
   /**
-   * Get company by ID
-   * Access control should be handled by middleware
+   * Get company by ID.
    */
   async getById(companyId: string, userId: string, isPlatformAdmin: boolean) {
     const company = await prisma.company.findUnique({

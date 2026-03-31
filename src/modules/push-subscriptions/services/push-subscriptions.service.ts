@@ -13,10 +13,12 @@ if (vapidPublicKey && vapidPrivateKey) {
 }
 
 export class PushSubscriptionsService {
+  /** Return the VAPID public key (null if push is not configured). */
   getVapidPublicKey() {
     return vapidPublicKey ?? null;
   }
 
+  /** Register or update a push subscription for a user. */
   async subscribe(userId: string, data: { endpoint: string; p256dh: string; auth: string; lang?: string }) {
     await prisma.pushSubscription.upsert({
       where: { endpoint: data.endpoint },
@@ -25,10 +27,12 @@ export class PushSubscriptionsService {
     });
   }
 
+  /** Remove a push subscription by endpoint. */
   async unsubscribe(endpoint: string) {
     await prisma.pushSubscription.deleteMany({ where: { endpoint } });
   }
 
+  /** List all push subscriptions for a user. */
   async listForUser(userId: string) {
     return prisma.pushSubscription.findMany({
       where: { userId },
@@ -37,6 +41,7 @@ export class PushSubscriptionsService {
     });
   }
 
+  /** List all push subscriptions (admin only). */
   async listAll() {
     return prisma.pushSubscription.findMany({
       select: {
@@ -50,6 +55,7 @@ export class PushSubscriptionsService {
     });
   }
 
+  /** Send a push notification to all subscriptions of a user. Stale subscriptions (410) are auto-removed. */
   async sendToUser(userId: string, buildPayload: (lang: string) => PushPayload): Promise<void> {
     if (!vapidPublicKey || !vapidPrivateKey) return;
 

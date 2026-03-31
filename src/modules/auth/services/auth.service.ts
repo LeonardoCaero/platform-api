@@ -10,6 +10,7 @@ import {
 import type { RegisterDto, LoginDto } from "../schemas/auth.schema";
 
 export class AuthService {
+  /** Register a new user and issue access and refresh tokens. */
   async register(data: RegisterDto) {
     const existingUser = await prisma.user.findUnique({
       where: { email: data.email },
@@ -48,6 +49,7 @@ export class AuthService {
     return { user, accessToken, refreshToken };
   }
 
+  /** Authenticate user credentials and issue access and refresh tokens. */
   async login(data: LoginDto) {
     const user = await prisma.user.findUnique({
       where: { email: data.email },
@@ -95,6 +97,7 @@ export class AuthService {
     };
   }
 
+  /** Verify and rotate a refresh token, issuing new access and refresh tokens. */
   async refresh(refreshToken: string, userId: string) {
     const isValid = await verifyRefreshToken(refreshToken, userId);
 
@@ -125,10 +128,12 @@ export class AuthService {
     };
   }
 
+  /** Revoke the refresh token, ending the user session. */
   async logout(refreshToken: string, userId: string) {
     await revokeRefreshToken(refreshToken, userId);
   }
 
+  /** Return the full profile of the authenticated user including platform status, permissions, and companies. */
   async getMe(userId: string) {
     const [user, platformAdmin, globalPermissions, memberships] = await Promise.all([
       prisma.user.findUnique({

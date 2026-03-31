@@ -17,6 +17,7 @@ const clientsService = new ClientsService();
 export class ClientsController {
   // Clients
 
+  /** Create a new client. */
   async create(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -25,6 +26,7 @@ export class ClientsController {
     res.status(201).json({ success: true, data: client });
   }
 
+  /** List clients for a company. */
   async list(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -33,6 +35,7 @@ export class ClientsController {
     res.status(200).json({ success: true, data: result.clients, pagination: result.pagination });
   }
 
+  /** Get a client by ID. */
   async getById(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -40,6 +43,7 @@ export class ClientsController {
     res.status(200).json({ success: true, data: client });
   }
 
+  /** Update a client. */
   async update(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -48,6 +52,7 @@ export class ClientsController {
     res.status(200).json({ success: true, data: client });
   }
 
+  /** Delete a client. */
   async delete(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -57,6 +62,7 @@ export class ClientsController {
 
   // Sites
 
+  /** Create a site under a client. */
   async createSite(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -65,6 +71,7 @@ export class ClientsController {
     res.status(201).json({ success: true, data: site });
   }
 
+  /** Update a site. */
   async updateSite(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -73,6 +80,7 @@ export class ClientsController {
     res.status(200).json({ success: true, data: site });
   }
 
+  /** Delete a site. */
   async deleteSite(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -82,6 +90,7 @@ export class ClientsController {
 
   // Rate Rules
 
+  /** Create a rate rule under a client. */
   async createRateRule(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -90,6 +99,7 @@ export class ClientsController {
     res.status(201).json({ success: true, data: rule });
   }
 
+  /** Update a rate rule. */
   async updateRateRule(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -98,6 +108,7 @@ export class ClientsController {
     res.status(200).json({ success: true, data: rule });
   }
 
+  /** Delete a rate rule. */
   async deleteRateRule(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -107,6 +118,7 @@ export class ClientsController {
 
   // Resources
 
+  /** Create a resource under a rate rule. */
   async createResource(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -115,6 +127,7 @@ export class ClientsController {
     res.status(201).json({ success: true, data: resource });
   }
 
+  /** Update a rate rule resource. */
   async updateResource(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;
@@ -123,6 +136,7 @@ export class ClientsController {
     res.status(200).json({ success: true, data: resource });
   }
 
+  /** Delete a rate rule resource. */
   async deleteResource(req: Request, res: Response) {
     const userId = req.user!.userId;
     const isPlatformAdmin = req.isPlatformAdmin || false;

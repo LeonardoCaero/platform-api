@@ -35,8 +35,6 @@ app.use(cookieParser());
 
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
-// /api/uploads/ — served through the existing /api/ nginx proxy block (no extra nginx rule needed)
-// Override CORP header: Helmet defaults to same-origin which blocks cross-origin <img> loading
 app.use('/api/uploads', (_req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   next();
@@ -51,10 +49,8 @@ app.get("/health", (_req, res) => {
   });
 });
 
-// Routes
 app.use('/api', routes);
 
-// Error Handler
 app.use(apiErrorHandler);
 
 export default app;

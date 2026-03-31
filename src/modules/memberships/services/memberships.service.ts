@@ -53,6 +53,7 @@ const memberInclude = {
 
 export class MembershipsService {
 
+  /** Return all memberships for a company. */
   async getMembers(companyId: string) {
     const members = await prisma.membership.findMany({
       where: { companyId },
@@ -62,6 +63,7 @@ export class MembershipsService {
     return members.map(mapMembership);
   }
 
+  /** Search platform users who are not yet members of the company. */
   async searchNonMembers(companyId: string, search?: string) {
     const existingUserIds = await prisma.membership
       .findMany({ where: { companyId }, select: { userId: true } })
@@ -88,6 +90,7 @@ export class MembershipsService {
     return users.map(mapUser);
   }
 
+  /** Add a user to a company with INVITED status and notify them via push and SSE. */
   async inviteMember(companyId: string, data: {
     userId: string;
     position?: string;
@@ -149,6 +152,7 @@ export class MembershipsService {
     return mapMembership(membership);
   }
 
+  /** Replace a member's role assignments. */
   async updateMemberRoles(companyId: string, memberId: string, roleIds: string[]) {
     const membership = await prisma.membership.findFirst({ where: { id: memberId, companyId } });
     if (!membership) throw ApiError.notFound('Member not found');
@@ -170,12 +174,14 @@ export class MembershipsService {
     return mapMembership(updated);
   }
 
+  /** Remove a membership from a company. */
   async removeMember(companyId: string, memberId: string) {
     const membership = await prisma.membership.findFirst({ where: { id: memberId, companyId } });
     if (!membership) throw ApiError.notFound('Member not found');
     await prisma.membership.delete({ where: { id: memberId } });
   }
 
+  /** Return all roles defined for a company with member count. */
   async getRoles(companyId: string) {
     const roles = await prisma.role.findMany({
       where: { companyId },
@@ -188,6 +194,7 @@ export class MembershipsService {
     }));
   }
 
+  /** Create a new role for a company. */
   async createRole(companyId: string, data: { name: string; description?: string; color?: string }) {
     const existing = await prisma.role.findUnique({
       where: { companyId_name: { companyId, name: data.name } },
@@ -201,6 +208,7 @@ export class MembershipsService {
     return { ...mapRole(role), _count: { companyMembers: role._count.members } };
   }
 
+  /** Update an existing role's details. */
   async updateRole(companyId: string, roleId: string, data: { name?: string; description?: string; color?: string }) {
     const role = await prisma.role.findFirst({ where: { id: roleId, companyId } });
     if (!role) throw ApiError.notFound('Role not found');
@@ -213,6 +221,7 @@ export class MembershipsService {
     return { ...mapRole(updated), _count: { companyMembers: updated._count.members } };
   }
 
+  /** Delete a non-system role from a company. */
   async deleteRole(companyId: string, roleId: string) {
     const role = await prisma.role.findFirst({ where: { id: roleId, companyId } });
     if (!role) throw ApiError.notFound('Role not found');
@@ -222,6 +231,7 @@ export class MembershipsService {
 
   // Invitations (user-facing)
 
+  /** Return pending (INVITED) company invitations for a user. */
   async getPendingInvitations(userId: string) {
     const memberships = await prisma.membership.findMany({
       where: { userId, status: 'INVITED' },
@@ -249,6 +259,7 @@ export class MembershipsService {
       }));
   }
 
+  /** Accept an invitation and activate the membership. */
   async acceptInvitation(userId: string, membershipId: string) {
     const membership = await prisma.membership.findFirst({
       where: { id: membershipId, userId, status: 'INVITED' },
@@ -261,6 +272,7 @@ export class MembershipsService {
     });
   }
 
+  /** Decline and remove an invitation. */
   async declineInvitation(userId: string, membershipId: string) {
     const membership = await prisma.membership.findFirst({
       where: { id: membershipId, userId, status: 'INVITED' },

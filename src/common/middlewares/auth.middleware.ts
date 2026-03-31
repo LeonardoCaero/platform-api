@@ -13,6 +13,10 @@ declare global {
   }
 }
 
+/**
+ * Verify the Authorization Bearer token and populate req.user.
+ * Throws 401 if the token is missing or invalid.
+ */
 export const authMiddleware = (
   req: Request,
   res: Response,
