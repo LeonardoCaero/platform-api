@@ -8,6 +8,7 @@ import { prisma } from './db/prisma';
 import { pushService } from './modules/push-subscriptions/services/push-subscriptions.service';
 import { t } from './modules/push-subscriptions/push.i18n';
 import { logger } from './common/logger/logger';
+import { sseManager } from './common/services/sse.manager';
 
 async function fireReminderNotifications() {
   const today = new Date();
@@ -29,6 +30,7 @@ async function fireReminderNotifications() {
   logger.info(`[Scheduler] Firing ${pending.length} reminder notification(s)`);
 
   const now = new Date();
+  const affectedUserIds = new Set<string>();
 
   const sends = pending.map(async (reminder) => {
     const { calendarNote, userId, daysBeforeDue } = reminder;
@@ -40,18 +42,23 @@ async function fireReminderNotifications() {
         where: { id: reminder.id },
         data: { sentAt: now },
       });
+      affectedUserIds.add(userId);
     } catch (err) {
       logger.error(`[Scheduler] Failed to send reminder ${reminder.id}`, err);
     }
   });
 
   await Promise.allSettled(sends);
+
+  for (const userId of affectedUserIds) {
+    sseManager.sendToUser(userId, 'reminder:count-changed', {});
+  }
 }
 
 async function cleanupExpiredTokens() {
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-  const [refreshTokens, memberInvites] = await Promise.all([
+  const [refreshTokens, memberInvites, staleReminders] = await Promise.all([
     prisma.refreshToken.deleteMany({
       where: {
         OR: [
@@ -66,9 +73,15 @@ async function cleanupExpiredTokens() {
         updatedAt: { lt: thirtyDaysAgo },
       },
     }),
+    prisma.reminderNotification.deleteMany({
+      where: { scheduledFor: { lt: thirtyDaysAgo } },
+    }),
   ]);
 
-  logger.info(`[Scheduler] Token cleanup: removed ${refreshTokens.count} refresh tokens, ${memberInvites.count} old invites`);
+  logger.info(
+    `[Scheduler] Token cleanup: removed ${refreshTokens.count} refresh tokens, ` +
+    `${memberInvites.count} old invites, ${staleReminders.count} stale reminders`,
+  );
 }
 
 export function startScheduler() {
